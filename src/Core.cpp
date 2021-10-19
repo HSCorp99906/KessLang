@@ -1,6 +1,10 @@
 #include "../include/Core.hpp"
 #include "../include/Token.hpp"
 
+/* CORE FILE TO HANDLE SYNTAX
+ * STUFF AND EXECUTION*/
+
+
 unsigned int lineNum = 0;
 
 
