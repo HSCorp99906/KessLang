@@ -1,1 +1,1 @@
-~/KessLang2/bin/main $PWD/$1
+~/KessLang/bin/main $PWD/$1
