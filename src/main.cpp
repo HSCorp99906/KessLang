@@ -2,6 +2,8 @@
 #include <string>
 #include "../include/Core.hpp"
 
+// Made By Ian Moffett 10/19/21
+
 std::ifstream src("kesslang.kess");
 
 int main(int argc, char* argv[]) {
