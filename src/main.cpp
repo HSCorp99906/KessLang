@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 
     src.close();
 
-    src = std::ifstream("kesslang.kess");
+    src = std::ifstream(argv[1]);
 
     while (std::getline(src, line)) {
         execute(line);
