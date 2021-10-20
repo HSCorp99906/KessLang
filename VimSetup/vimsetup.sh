@@ -11,6 +11,7 @@ EXI=$(command -v vim >/dev/null 2>&1 || { echo "__NULL__";})
 
 setup () {
     echo "Setting up highlighting.."
+    echo "syntax on" >> ~/.vimrc
     echo "highlight OUT ctermfg=LightRed" >> ~/.vimrc
     echo "highlight BAK ctermfg=LightRed" >> ~/.vimrc
     echo "highlight INT_KEYWORD ctermfg=yellow" >> ~/.vimrc
