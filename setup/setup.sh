@@ -6,6 +6,9 @@ then
 else
     echo "Setting up.."
     sleep 1
+    cd ../src
+    make
+    cd ../setup
     mv klcc /bin/
     echo "Removing setup junk.."
     sleep 1
