@@ -28,11 +28,11 @@ update () {
                 exit
             else
                 mkdir ~/backup150
-                cp ~/.vimrc backup150
+                cp ~/.vimrc ~/backup150
             fi
         else
             mkdir ~/backup
-            cp ~/.vimrc backup
+            cp ~/.vimrc ~/backup
         fi
     fi
 
