@@ -8,3 +8,4 @@ else
     apt-get install g++
     apt-get install make
     apt-get install vim
+fi
