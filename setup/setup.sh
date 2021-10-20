@@ -14,8 +14,13 @@ else
     mv klcc /bin/
     chmod +x /bin/klcc
     echo "Removing setup junk.."
+    rm get-deps.sh
     sleep 1
-    echo "You may now delete the setup folder."
-    echo "Create a .kess file and run: klcc filename.kess"
-    rm setup.sh
+    echo "Changing directory to ../"
+    cd ../
+    sleep 2
+    echo "Deleting setup folder.."
+    sleep 1
+    cho "Create a .kess file and run: klcc filename.kess"
+    rm -rf setup/
 fi
