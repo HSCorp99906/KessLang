@@ -4,7 +4,7 @@ VIMPATH=$(find ~/.vim | head -n 1)
 VIMRCPATH=$(find ~/.vimrc | head -n 1)
 EXI=$(command -v vim >/dev/null 2>&1 || { echo "__NULL__";})
 
-setup_vimrc () {
+setup () {
     echo "highlight OUT ctermfg=LightRed" >> ~/.vimrc
     echo "highlight BAK ctermfg=LightRed" >> ~/.vimrc
 }
