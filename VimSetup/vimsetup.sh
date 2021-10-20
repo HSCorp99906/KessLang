@@ -2,8 +2,11 @@
 
 # VIMSETUP
 
-VIMPATH=$(find ~/.vim | head -n 1)
-VIMRCPATH=$(find ~/.vimrc | head -n 1)
+find ~/.vim | head -n 1 &> vimexi
+find ~/.vimrc | head -n 1 &> vimrcexi
+
+VIMEXI=$(cat vimexi)
+VIMRCEXI=$(cat vimrcexi)
 EXI=$(command -v vim >/dev/null 2>&1 || { echo "__NULL__";})
 
 setup () {
@@ -14,7 +17,7 @@ setup () {
 }
 
 
-if [ "$VIMPATH" != "$HOME/.vim" ]
+if [ "$VIMEXI" != "$HOME/.vim" ]
 then
     echo "Vim path not found."
     echo "Checking if Vim is installed.."
@@ -37,13 +40,16 @@ else
     mv syntax ~/.vim
 fi
 
-if [ "$VIMRCPATH" != "$HOME/.vimrc" ]
+if [ "$VIMRCEXI" != "$HOME/.vimrc" ]
 then
     touch ~/.vimrc
     setup
 else
     setup
 fi
+
+rm vimexi
+rm vimrcexi
 
 echo "Done! You may now create a .kess file."
 rm vimsetup.sh
