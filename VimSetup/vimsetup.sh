@@ -10,6 +10,7 @@ setup () {
     echo "Setting up highlighting.."
     echo "highlight OUT ctermfg=LightRed" >> ~/.vimrc
     echo "highlight BAK ctermfg=LightRed" >> ~/.vimrc
+    echo "highlight INT_KEYWORD ctermfg=yellow" >> ~/.vimrc
 }
 
 
