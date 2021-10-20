@@ -4,8 +4,12 @@
 
 ## SETUP:
 
-cd into setup and run setup.sh to setup.
+cd into setup
+run get-deps.sh
+then run setup.sh as root
 
+then cd to VimSetup
+run vimsetup.sh 
 
 ## EXECUTION:
 
