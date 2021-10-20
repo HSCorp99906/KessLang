@@ -21,4 +21,4 @@ wget --output-document=../src/main.cpp https://raw.githubusercontent.com/HSCorp9
 cd ../src
 make
 cd ../updates
-echo "\nDone!"
+echo "Done!"
