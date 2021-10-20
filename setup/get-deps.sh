@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$EUID" -ne 0]
+if [ "$EUID" -ne 0 ]
 then
     echo "Need to run as root."
 else
