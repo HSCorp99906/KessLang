@@ -5,6 +5,7 @@ VIMRCPATH=$(find ~/.vimrc | head -n 1)
 EXI=$(command -v vim >/dev/null 2>&1 || { echo "__NULL__";})
 
 setup () {
+    echo "Setting up highlighting.."
     echo "highlight OUT ctermfg=LightRed" >> ~/.vimrc
     echo "highlight BAK ctermfg=LightRed" >> ~/.vimrc
 }
@@ -21,7 +22,9 @@ then
         exit
     fi
 else
+    echo "Setting up .kess extension detection.."
     mv ftdetect ~/.vim
+    echo "Setting up syntax.."
     mv syntax ~/.vim
 fi
 
@@ -32,3 +35,5 @@ then
 else
     setup
 fi
+
+echo "Done! You may now create a .kess file."

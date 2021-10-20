@@ -10,6 +10,7 @@ else
     make
     cd ../setup
     mv klcc /bin/
+    chmod +x /bin/klcc
     echo "Removing setup junk.."
     sleep 1
     echo "You may now delete the setup folder."
