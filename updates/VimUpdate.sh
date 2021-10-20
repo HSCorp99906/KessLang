@@ -37,8 +37,8 @@ fi
 
 > ~/.vimrc
 echo "syntax on" >> ~/.vimrc
-echo "highlight OUT ctermfg=LightRed" >> ~/.vimrc
-echo "highlight BAK ctermfg=LightRed" >> ~/.vimrc
+echo "highlight OUT ctermfg=red" >> ~/.vimrc
+echo "highlight BAK ctermfg=red" >> ~/.vimrc
 echo "highlight INT_KEYWORD ctermfg=yellow" >> ~/.vimrc
 
 vimfile=$(find ~/.vim | head -n 1)
