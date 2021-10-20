@@ -63,7 +63,7 @@ update () {
         echo "Done you are now up to date!"
         echo "Deleting VimUpdate.sh..."
         rm VimUpdate.sh
-
+    fi
 }
 
 
@@ -76,3 +76,4 @@ then
     exit
 else
     update
+fi
