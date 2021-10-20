@@ -17,7 +17,7 @@ setup () {
 if [ "$VIMPATH" != "$HOME/.vim" ]
 then
     echo "Vim path not found."
-    echo "Checking if vim is installed.."
+    echo "Checking if Vim is installed.."
     sleep 1
     if [ "$EXI" == "__NULL__" ]
     then
@@ -46,3 +46,4 @@ else
 fi
 
 echo "Done! You may now create a .kess file."
+rm vimsetup.sh
