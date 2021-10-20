@@ -1,10 +1,16 @@
 #!/bin/bash
 
 EXI=$(command -v wget >/dev/null 2>&1 || { echo "__NULL__";})
+EXI_MAKE=$(command -v wget >/dev/null 2>&1 || { echo "__NULL__";})
 
 if [ "$EXI" == "__NULL__" ]
 then
     sudo apt-get install wget
+fi
+
+if [ "$EXI_MAKE" == "__NULL__" ]
+then
+    sudo apt-get install make
 fi
 
 rm ../src/Core.cpp
