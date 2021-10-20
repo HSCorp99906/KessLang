@@ -21,6 +21,6 @@ else
     sleep 2
     echo "Deleting setup folder.."
     sleep 1
-    cho "Create a .kess file and run: klcc filename.kess"
+    echo "Create a .kess file and run: klcc filename.kess"
     rm -rf setup/
 fi
