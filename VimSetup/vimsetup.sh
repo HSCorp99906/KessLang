@@ -24,6 +24,10 @@ then
         exit
     else
         mkdir ~/.vim
+        echo "Setting up .kess extension detection.."
+        mv ftdetect ~/.vim
+        echo "Setting up syntax.."
+        mv syntax ~/.vim
     fi
 else
     echo "Setting up .kess extension detection.."
