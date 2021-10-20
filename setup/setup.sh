@@ -12,3 +12,4 @@ else
     echo "You may now delete the setup folder."
     echo "Create a .kess file and run: klcc filename.kess"
     rm setup.sh
+fi
