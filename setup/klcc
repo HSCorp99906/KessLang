@@ -1,1 +1,3 @@
+#!/bin/bash
+
 ~/KessLang/bin/main $PWD/$1
