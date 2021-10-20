@@ -22,6 +22,8 @@ then
     then
         echo "ERROR: Vim is not installed, please install vim. (Terminated)"
         exit
+    else
+        mkdir ~/.vim
     fi
 else
     echo "Setting up .kess extension detection.."
