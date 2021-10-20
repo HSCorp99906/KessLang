@@ -2,15 +2,6 @@
 
 # SETUP.
 
-EXI=$(command -v make >/dev/null 2>&1 || { echo "__NULL__";})
-EXI_GPP=$(command -v g++ >/dev/null 2>&1 || { echo "__NULL__";})
-
-if [ "$EXI"  == "__NULL__" || "$EXI_GPP" == "__NULL__" ]
-then
-    echo "Cannot start due to missing deps. (Terminated)"
-    exit
-fi
-
 if [ "$EUID" -ne 0 ]
 then
     echo "Please run program as root."
