@@ -280,6 +280,8 @@ void execute() {
         bool openQuote = false;
         bool closedQuote = false;
 
+        bool quote = false;
+
         if (possibleVar) {
             canPrintVar = true;
         }
@@ -292,6 +294,17 @@ void execute() {
             case OUT:
                 for (int i = 0; i < 3; ++i) {
                     command += line[i];
+                }
+
+                for (int i = 0; i < lines[_line].size(); ++i) {
+                    if (lines[_line][i] == '"') {
+                        possibleVar = false;
+                        quote = true;
+                    }
+                }
+
+                if (!(quote)) {
+                    possibleVar = true;
                 }
 
                 if (possibleVar) {
