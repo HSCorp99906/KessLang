@@ -16,6 +16,7 @@ enum BuiltIn : unsigned int {
     OUT = 0,
     BACKWARD = 1,
     INT_DEF = 2,
+    EMPTY = 3
 };
 
 
@@ -63,6 +64,8 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (parse == "int") {
             builtInUsed = INT_DEF;
+        } else if (parse == "__EMPTY__") {
+            builtInUsed = EMPTY;
         }
     }
 }
@@ -76,6 +79,21 @@ void exit_err(std::string message) {
 
 
 void parseAndPrepare(std::string line) {
+
+    std::string noCommentLine = "";
+
+    for (int i = 0; i < line.size(); ++i) {
+        if (line[i] == ' ') {
+            noCommentLine = line.substr(0, i);
+            line = noCommentLine;
+            break;
+        }
+    }
+
+    if (std::regex_match(line, std::regex("//.*"))) {
+        line = "__EMPTY__;";
+    }
+
     lines.push_back(line);
     ++lineNum;
 
