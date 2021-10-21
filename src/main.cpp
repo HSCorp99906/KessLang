@@ -7,6 +7,7 @@
 std::ifstream src("kesslang.kess");
 extern unsigned int lineNum;
 
+
 int main(int argc, char* argv[]) {
     src = std::ifstream(argv[1]);
 
@@ -28,6 +29,6 @@ int main(int argc, char* argv[]) {
     }
 
     src.close();
-    
+
     execute();
 }
