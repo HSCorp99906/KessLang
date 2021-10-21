@@ -1,2 +1,2 @@
 out("Hello, World!");
-bak("Backwords message!");
+out(":D");
