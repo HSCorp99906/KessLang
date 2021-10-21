@@ -81,16 +81,22 @@ void exit_err(std::string message) {
 void parseAndPrepare(std::string line) {
 
     std::string noCommentLine = "";
+    bool endOfLine = false;
 
     for (int i = 0; i < line.size(); ++i) {
-        if (line[i] == ' ') {
+
+        if (line[i] == ';') {
+            endOfLine = true;
+        }
+
+        if (line[i] == ' ' && endOfLine) {
             noCommentLine = line.substr(0, i);
             line = noCommentLine;
             break;
         }
     }
 
-    if (std::regex_match(line, std::regex("//.*"))) {
+    if (std::regex_match(line, std::regex("^//.*"))) {
         line = "__EMPTY__;";
     }
 
@@ -104,6 +110,7 @@ void parseAndPrepare(std::string line) {
     ptToken.setBuiltIn(builtInUsed);
 
     if (line[line.size() - 1] != ';') {
+        std::cout << line << std::endl;
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
 
