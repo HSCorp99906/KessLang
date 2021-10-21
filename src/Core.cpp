@@ -6,12 +6,16 @@
 
 
 unsigned int lineNum = 0;
+bool possibleVar = false;
+bool outStringCalled = false;
+std::map<unsigned int, std::string> outs;
+std::vector<std::string> lines;
 
 
 enum BuiltIn : unsigned int {
     OUT = 0,
     BACKWARD = 1,
-    INT_DEF = 2
+    INT_DEF = 2,
 };
 
 
@@ -72,6 +76,7 @@ void exit_err(std::string message) {
 
 
 void parseAndPrepare(std::string line) {
+    lines.push_back(line);
     ++lineNum;
 
     unsigned int builtInUsed;
@@ -80,10 +85,9 @@ void parseAndPrepare(std::string line) {
     ptToken << line;
     ptToken.setBuiltIn(builtInUsed);
 
-    if (line[line.size() - 1] != ';' && line != "") {
+    if (line[line.size() - 1] != ';') {
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
-
 
     bool openParen = false;
     bool closedParen = false;
@@ -102,9 +106,11 @@ void parseAndPrepare(std::string line) {
             for (int i = 0; i < line.size(); ++i) {
                 if (line[i] == '"' && !(openQuote)) {
                     openQuote = true;
+                    outStringCalled = true;
+                    ptToken ^ outs[lineNum];
                 } else if (line[i] == '"' && openQuote) {
                     closedQuote = true;
-                } else if (line[i] == '"' && openQuote && closedQuote) {
+                } else if (line[i] == '"' && closedQuote) {
                     exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
                 }
 
@@ -119,6 +125,12 @@ void parseAndPrepare(std::string line) {
 
             if (!(openParen) || !(closedParen)) {
                 exit_err("ERROR: Missing parenthesis on line: " + std::to_string(lineNum));
+            }
+
+            if (!(openQuote) && !(closedQuote)) {
+                possibleVar = true;
+            } else {
+                possibleVar = false;
             }
 
             break;
@@ -143,12 +155,9 @@ void parseAndPrepare(std::string line) {
 
             break;
         case INT_DEF:
-
             for (int i = 4; i < line.size() - 1 && line[i] != ' '; ++i) {
                 varBuffer += line[i];
             }
-
-            std::cout << varBuffer << std::endl;
 
             if (varBuffer == "out") {
                 exit_err("ERROR: Variable with name of a reserved keyword on line: " + std::to_string(lineNum));
@@ -206,62 +215,160 @@ void parseAndPrepare(std::string line) {
         exit_err("ERROR: Lingering quotes on line: " + std::to_string(lineNum));
     }
 
-
 }
 
 
-void execute(std::string line) {
+void execute() {
     std::map<std::string, short int> intVars;
-    unsigned int builtInUsed;
-
     Token rtToken;
-    rtToken << line;
-    rtToken.setBuiltIn(builtInUsed);
+    unsigned int internalLineNum = 0;
+    bool canPrintVar = true;
+    bool canPrint = true;
 
-    std::string stdoutBuffer;
-    std::string stdoutBakBuffer = "";
+    std::vector<std::string> to_ignore;  // Lines to ignore.
+    for (int _line = 0; _line < lines.size(); ++_line) {
+        canPrintVar = true;
 
-    std::string varKey = "";
-    std::string varValString = "";
-    std::stringstream toInt;
-    int varVal;
+        ++internalLineNum;
 
-    switch (builtInUsed) {
-        case OUT:
-            rtToken ^ stdoutBuffer;
-            std::cout << stdoutBuffer << std::endl;
-            break;
-        case BACKWARD:
-            rtToken ^ stdoutBuffer;
+        std::string varKey = "";
+        std::string varValString = "";
+        std::stringstream toInt;
+        int varVal;
 
-            for (int i = stdoutBuffer.size() - 1; i > -1; --i) {
-                stdoutBakBuffer += stdoutBuffer[i];
-            }
+        std::string line = lines[_line];
+        unsigned int builtInUsed;
 
-            std::cout << stdoutBakBuffer << std::endl;
-            break;
-        case INT_DEF:
-            for (int i = 4; line[i] != ' ' && i < line.size() - 1; ++i) {
-                varKey += line[i];
-            }
+        if (outStringCalled) {
+            std::cout << outs[internalLineNum] << std::endl;
+            for (int i = _line; i < lines.size(); ++i) {
+                rtToken << lines[i];
+                rtToken.setBuiltIn(builtInUsed);
 
-            for (int i = 4; i < line.size() - 1; ++i) {
-                if (line[i] == '=') {
-                    for (int j = i; j < line.size() - 1; ++j) {
-                        if (line[j] != '=' && line[j] != ' ') {
-                            varValString += line[j];
+                if (builtInUsed == INT_DEF) {
+                    for (int j = 4; lines[i][j] != ' ' && j < lines[i].size(); ++j) {
+                        varKey += lines[i][j];
+                    }
+
+                    for (int j = 4; j < lines[i].size() - 3; ++j) {
+                        if (lines[i][j] == '=') {
+                            for (int e = j; e < lines[i].size() - 1; ++e) {
+                                if (lines[i][e] != '=' && lines[i][e] != ' ') {
+                                    varValString += lines[i][e];
+                                }
+                            }
+
+                            break;
                         }
                     }
 
+                    toInt << varValString;
+                    toInt >> varVal;
+                    intVars[varKey] = varVal;
+                    to_ignore.push_back(lines[i]);
                     break;
                 }
             }
+        }
 
-            toInt << varValString;
-            toInt >> varVal;
+        rtToken << line;
+        rtToken.setBuiltIn(builtInUsed);
 
-            intVars[varKey] = varVal;
+        std::string stdoutBuffer;
+        std::string stdoutBakBuffer = "";
 
-            break;
+        bool openQuote = false;
+        bool closedQuote = false;
+
+        if (possibleVar) {
+            canPrintVar = true;
+        }
+
+        bool ignore = false;
+
+        std::string command = "";
+
+        switch (builtInUsed) {
+            case OUT:
+                for (int i = 0; i < 3; ++i) {
+                    command += line[i];
+                }
+
+                if (possibleVar) {
+                    std::string key;
+
+                    if (!(outStringCalled)) {
+                        rtToken ^ key;
+                    } else {
+                        rtToken << lines[lineNum - 1];
+                        rtToken ^ key;
+                        outStringCalled = false;
+                    }
+
+                    if (intVars.count(key)) {
+                        if (canPrintVar) {
+                            std::string val = "";
+
+                            if (canPrintVar) {
+                                canPrintVar = false;
+                                canPrint = false;
+                                std::cout << intVars[key] << std::endl;
+                            }
+                        }
+                    } else {
+                        std::cout << "KEY: " << key << std::endl;
+                        exit_err("RUNTIME ERROR: Trying to print non-existing var on line: " + std::to_string(lineNum));
+                    }
+                }
+
+                    if (!(possibleVar) && command == "out" && canPrint && !(outStringCalled)) {
+                        rtToken ^ stdoutBuffer;
+                        std::cout << stdoutBuffer << std::endl;
+                    }
+
+                outStringCalled = false;
+                command = "";
+                possibleVar = false;
+                break;
+            case BACKWARD:
+                rtToken ^ stdoutBuffer;
+
+                for (int i = stdoutBuffer.size() - 1; i > -1; --i) {
+                    stdoutBakBuffer += stdoutBuffer[i];
+                }
+
+                std::cout << stdoutBakBuffer << std::endl;
+                break;
+            case INT_DEF:
+                for (int i = 4; line[i] != ' ' && i < line.size() - 1; ++i) {
+                    varKey += line[i];
+                }
+
+                for (int i = 4; i < line.size() - 1; ++i) {
+                    if (line[i] == '=') {
+                        for (int j = i; j < line.size() - 1; ++j) {
+                            if (line[j] != '=' && line[j] != ' ') {
+                                varValString += line[j];
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
+                for (int i = 0; i < to_ignore.size(); ++i) {
+                    if (line == to_ignore[i]) {
+                        ignore = true;
+                    }
+                }
+
+                if (!(ignore)) {
+                    toInt << varValString;
+                    toInt >> varVal;
+                    intVars[varKey] = varVal;
+                }
+
+                break;
+        }
     }
 }

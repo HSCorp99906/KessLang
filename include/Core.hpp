@@ -7,11 +7,12 @@
 #include <map>
 #include <bits/stdc++.h>
 #include <regex>
+#include <vector>
 
 
 void parseAndPrepare(std::string line);
 
-void execute(std::string line);
+void execute();
 
 
 #endif

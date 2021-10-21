@@ -5,6 +5,7 @@
 // Made By Ian Moffett 10/19/21
 
 std::ifstream src("kesslang.kess");
+extern unsigned int lineNum;
 
 int main(int argc, char* argv[]) {
     src = std::ifstream(argv[1]);
@@ -18,16 +19,15 @@ int main(int argc, char* argv[]) {
     std::string line;
 
     while (std::getline(src, line)) {
+        if (line == "") {
+            ++lineNum;
+            continue;
+        }
+
         parseAndPrepare(line);
     }
 
     src.close();
-
-    src = std::ifstream(argv[1]);
-
-    while (std::getline(src, line)) {
-        execute(line);
-    }
-
-    src.close();
+    
+    execute();
 }
