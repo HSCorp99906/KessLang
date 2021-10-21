@@ -59,7 +59,7 @@ else
     echo "syntax match OUT /out/" >> ~/.vim/syntax/kess.vim
     echo "syntax match BAK /bak/" >> ~/.vim/syntax/kess.vim
     echo "syntax match INT_KEYWORD /int/" >> ~/.vim/syntax/kess.vim
-    echo "Done you are now up to date!"
+    echo "Done! You are now up to date!"
     echo "Deleting VimUpdate.sh..."
     rm VimUpdate.sh
 fi
