@@ -316,7 +316,6 @@ void execute() {
                             }
                         }
                     } else {
-                        std::cout << "KEY: " << key << std::endl;
                         exit_err("RUNTIME ERROR: Trying to print non-existing var on line: " + std::to_string(lineNum));
                     }
                 }
