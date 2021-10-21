@@ -40,6 +40,8 @@ echo "syntax on" >> ~/.vimrc
 echo "highlight OUT ctermfg=red" >> ~/.vimrc
 echo "highlight BAK ctermfg=red" >> ~/.vimrc
 echo "highlight INT_KEYWORD ctermfg=yellow" >> ~/.vimrc
+echo "highlight STRING ctermfg=green" >> ~/.vimrc
+echo "highlight COMMENT ctermfg=blue" >> ~/.vimrc
 
 vimfile=$(find ~/.vim | head -n 1)
 
@@ -56,9 +58,9 @@ then
     fi
 else
     > ~/.vim/syntax/kess.vim
-    echo "syntax match OUT /out/" >> ~/.vim/syntax/kess.vim
-    echo "syntax match BAK /bak/" >> ~/.vim/syntax/kess.vim
-    echo "syntax match INT_KEYWORD /int/" >> ~/.vim/syntax/kess.vim
+    rm ~/.vim/syntax
+    mkdir ~/.vim/syntax
+    mv syntax.vim ~/.vim/syntax/kess.vim
     echo "Done! You are now up to date!"
     echo "Deleting VimUpdate.sh..."
     rm VimUpdate.sh
