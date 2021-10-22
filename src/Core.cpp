@@ -329,6 +329,11 @@ void execute() {
 
                 if (!(quote)) {
                     possibleVar = true;
+                    std::string posvar;
+                    rtToken ^ posvar;
+                    if (std::regex_match(posvar, std::regex("[0-9]+"))) {
+                        possibleVar = false;
+                    }
                 }
 
                 if (possibleVar) {
