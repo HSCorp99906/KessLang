@@ -21,7 +21,7 @@ enum BuiltIn : unsigned int {
     POST_INC = 5,
     PRE_DEC = 6,
     POST_DEC = 7,
-    FILE_READ = 8
+    FILE_READ_OUT = 8
 };
 
 
@@ -85,8 +85,8 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (std::regex_match(parse, std::regex("[A-Za-z]+(\\d?)+--"))) {
             builtInUsed = POST_DEC;
             break;
-        } else if (parse == "__file_read__") {
-            builtInUsed = FILE_READ;
+        } else if (parse == "__file_read_out__") {
+            builtInUsed = FILE_READ_OUT;
             break;
         }
     }
@@ -275,7 +275,7 @@ void parseAndPrepare(std::string line) {
             }
 
             break;
-        case FILE_READ:
+        case FILE_READ_OUT:
             for (int i = 0; i < line.size(); ++i) {
                 if (line[i] == '"' && !(openQuote)) {
                     openQuote = true;
@@ -301,7 +301,7 @@ void parseAndPrepare(std::string line) {
         {
             std::string filename = "";
 
-            for (int i = 15; i < line.size() - 3; ++i) {
+            for (int i = 19; i < line.size() - 3; ++i) {
                 filename += line[i];
             }
 
@@ -554,12 +554,12 @@ void execute() {
                 }
 
                 break;
-            case FILE_READ:
+            case FILE_READ_OUT:
                 {
 
                     std::string filename = "";
 
-                    for (int i = 15; i < line.size() - 3; ++i) {
+                    for (int i = 19; i < line.size() - 3; ++i) {
                         filename += line[i];
                     }
 
@@ -567,17 +567,9 @@ void execute() {
                     readpath += filename;
                     const char* ccharp_readpath = readpath.c_str();
                     std::string fileContents = std::to_string(system(ccharp_readpath));
-                    std::string cleanedFileContents = "";
+                    fileContents = std::regex_replace(fileContents, std::regex("[0-9]$"), "");
 
-                    for (int i = 0; i < fileContents.size(); ++i) {
-                        if (i >= fileContents.size() - 1 && fileContents[i] == '0') {
-                            break;
-                        } else {
-                            cleanedFileContents += fileContents[i];
-                        }
-                    }
-
-                    std::cout << cleanedFileContents << std::endl;
+                    std::cout << fileContents << std::endl;
                 }
 
         }
