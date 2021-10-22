@@ -17,7 +17,8 @@ enum BuiltIn : unsigned int {
     BACKWARD = 1,
     INT_DEF = 2,
     EMPTY = 3,
-    PRE_INC = 4
+    PRE_INC = 4,
+    POST_INC = 5
 };
 
 
@@ -71,6 +72,9 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (parse == "++") {
             builtInUsed = PRE_INC;
+            break;
+        } else if (regex_match(parse, std::regex("[a-zA-Z]\\d?+\\+\\+"))) {
+            builtInUsed = POST_INC;
             break;
         }
     }
@@ -431,6 +435,18 @@ void execute() {
                 break;
             case PRE_INC:
                 for (int i = 2; i < line.size() - 1; ++i) {
+                    varKey += line[i];
+                }
+
+                if (intVars.count(varKey)) {
+                    ++intVars[varKey];
+                } else {
+                    exit_err("RUNTIME ERROR: Trying to increment non-existing var on line: " + std::to_string(internalLineNum));
+                }
+
+                break;
+            case POST_INC:
+                for (int i = 0; i < line.size() - 3; ++i) {
                     varKey += line[i];
                 }
 
