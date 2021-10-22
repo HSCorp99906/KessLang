@@ -10,6 +10,8 @@ else
     sleep 1
     cd ../src
     make
+    echo "Compiling FileHandler.."
+    gcc FileHandling/Read.c -o FileHandling/READ
     cd ../setup
     mv klcc /bin/
     chmod +x /bin/klcc
