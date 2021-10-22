@@ -18,7 +18,8 @@ enum BuiltIn : unsigned int {
     INT_DEF = 2,
     EMPTY = 3,
     PRE_INC = 4,
-    POST_INC = 5
+    POST_INC = 5,
+    PRE_DEC = 6
 };
 
 
@@ -75,6 +76,9 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (regex_match(parse, std::regex("[a-zA-Z]\\d?+\\+\\+"))) {
             builtInUsed = POST_INC;
+            break;
+        } else if (parse == "--") {
+            builtInUsed = PRE_DEC;
             break;
         }
     }
@@ -244,6 +248,16 @@ void parseAndPrepare(std::string line) {
 
             break;
         case PRE_INC:
+            for (int i = 2; i < line.size() - 1; ++i) {
+                parsed += line[i];
+            }
+
+            if (!(std::regex_match(parsed, std::regex("[A-Za-z]\\d?+")))) {
+                exit_err("ERROR: Expected varname after \"++\" token.");
+            }
+
+            break;
+        case PRE_DEC:
             for (int i = 2; i < line.size() - 1; ++i) {
                 parsed += line[i];
             }
@@ -463,6 +477,23 @@ void execute() {
                 } else {
                     exit_err("RUNTIME ERROR: Trying to increment non-existing var on line: " + std::to_string(internalLineNum));
                 }
+
+                break;
+            case PRE_DEC:
+                for (int i = 2; i < line.size() - 1; ++i) {
+                    varKey += line[i];
+                }
+
+                if (intVars.count(varKey)) {
+                    if (intVars[varKey] - 1 < -32765) {
+                        exit_err("RUNTIME ERROR: Integer underflow on line: " + std::to_string(internalLineNum));
+                    } else {
+                        --intVars[varKey];
+                    }
+                } else {
+                    exit_err("RUNTIME ERROR: Trying to increment non-existing var on line: " + std::to_string(internalLineNum));
+                }
+
         }
     }
 }
