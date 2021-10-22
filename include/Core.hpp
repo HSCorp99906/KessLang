@@ -14,5 +14,6 @@ void parseAndPrepare(std::string line);
 
 void execute();
 
+void test();
 
 #endif
