@@ -439,7 +439,11 @@ void execute() {
                 }
 
                 if (intVars.count(varKey)) {
-                    ++intVars[varKey];
+                    if (intVars[varKey] + 1 > 32765) {
+                        exit_err("RUNTIME ERROR: Integer overflow on line: " + std::to_string(internalLineNum));
+                    } else {
+                        ++intVars[varKey];
+                    }
                 } else {
                     exit_err("RUNTIME ERROR: Trying to increment non-existing var on line: " + std::to_string(internalLineNum));
                 }
@@ -451,7 +455,11 @@ void execute() {
                 }
 
                 if (intVars.count(varKey)) {
-                    ++intVars[varKey];
+                    if (intVars[varKey] + 1 > 32765) {
+                        exit_err("RUNTIME ERROR: Integer overflow on line: " + std::to_string(internalLineNum));
+                    } else {
+                        ++intVars[varKey];
+                    }
                 } else {
                     exit_err("RUNTIME ERROR: Trying to increment non-existing var on line: " + std::to_string(internalLineNum));
                 }
