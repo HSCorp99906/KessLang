@@ -110,7 +110,6 @@ void parseAndPrepare(std::string line) {
     ptToken.setBuiltIn(builtInUsed);
 
     if (line[line.size() - 1] != ';') {
-        std::cout << line << std::endl;
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
 
