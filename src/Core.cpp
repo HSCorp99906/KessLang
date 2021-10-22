@@ -16,7 +16,8 @@ enum BuiltIn : unsigned int {
     OUT = 0,
     BACKWARD = 1,
     INT_DEF = 2,
-    EMPTY = 3
+    EMPTY = 3,
+    PRE_INC = 4
 };
 
 
@@ -64,8 +65,13 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (parse == "int") {
             builtInUsed = INT_DEF;
+            break;
         } else if (parse == "__EMPTY__") {
             builtInUsed = EMPTY;
+            break;
+        } else if (parse == "++") {
+            builtInUsed = PRE_INC;
+            break;
         }
     }
 }
@@ -119,6 +125,8 @@ void parseAndPrepare(std::string line) {
     bool closedQuote = false;
 
     bool varDefined = false;
+
+    std::string parsed = "";
 
     int varInt;
     std::stringstream intStream;
@@ -228,6 +236,16 @@ void parseAndPrepare(std::string line) {
                 exit_err("ERROR: Integer overflow on line: " + std::to_string(lineNum));
             } else if (varInt < -32765) {
                 exit_err("ERROR: Integer underflow on line: " + std::to_string(lineNum));
+            }
+
+            break;
+        case PRE_INC:
+            for (int i = 2; i < line.size() - 1; ++i) {
+                parsed += line[i];
+            }
+
+            if (!(std::regex_match(parsed, std::regex("[A-Za-z]\\d?+")))) {
+                exit_err("ERROR: Expected varname after \"++\" token.");
             }
 
             break;
@@ -409,7 +427,18 @@ void execute() {
                     intVars[varKey] = varVal;
                 }
 
+
                 break;
+            case PRE_INC:
+                for (int i = 2; i < line.size() - 1; ++i) {
+                    varKey += line[i];
+                }
+
+                if (intVars.count(varKey)) {
+                    ++intVars[varKey];
+                } else {
+                    exit_err("RUNTIME ERROR: Trying to increment non-existing var on line: " + std::to_string(internalLineNum));
+                }
         }
     }
 }
