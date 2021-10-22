@@ -20,7 +20,8 @@ enum BuiltIn : unsigned int {
     PRE_INC = 4,
     POST_INC = 5,
     PRE_DEC = 6,
-    POST_DEC = 7
+    POST_DEC = 7,
+    FILE_READ = 8
 };
 
 
@@ -83,6 +84,9 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (std::regex_match(parse, std::regex("[A-Za-z]+(\\d?)+--"))) {
             builtInUsed = POST_DEC;
+            break;
+        } else if (parse == "__file_read__") {
+            builtInUsed = FILE_READ;
             break;
         }
     }
@@ -271,6 +275,41 @@ void parseAndPrepare(std::string line) {
             }
 
             break;
+        case FILE_READ:
+            for (int i = 0; i < line.size(); ++i) {
+                if (line[i] == '"' && !(openQuote)) {
+                    openQuote = true;
+                } else if (line[i] == '"' && openQuote) {
+                    closedQuote = true;
+                } else if (line[i] == '"' && openQuote && closedQuote) {
+                    exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
+                }
+
+                if (line[i] == '(' && !(openParen)) {
+                    openParen = true;
+                } else if (line[i] == ')' && !(closedParen)) {
+                    closedParen = true;
+                } else if (line[i] == '(' && openParen || line[i] == ')' && closedParen) {
+                    exit_err("ERROR: Too many parenthesis on line: " + std::to_string(lineNum));
+                }
+        }
+
+        if (!(openParen) || !(closedParen)) {
+            exit_err("ERROR: Missing parenthesis on line: " + std::to_string(lineNum));
+        }
+
+        {
+            std::string filename = "";
+
+            for (int i = 15; i < line.size() - 3; ++i) {
+                filename += line[i];
+            }
+
+            if (!(std::filesystem::exists(filename))) {
+                exit_err("ERROR: File \"" + filename + "\"" + " does not exist on line: " + std::to_string(lineNum));
+            }
+        }
+
     }
 
     if (openParen && !(closedParen) || !(openParen) && closedParen) {
@@ -512,6 +551,33 @@ void execute() {
                     }
                 } else {
                     exit_err("RUNTIME ERROR: Trying to decrement non-existing var on line: " + std::to_string(internalLineNum));
+                }
+
+                break;
+            case FILE_READ:
+                {
+
+                    std::string filename = "";
+
+                    for (int i = 15; i < line.size() - 3; ++i) {
+                        filename += line[i];
+                    }
+
+                    std::string readpath = "../src/FileHandling/READ ";
+                    readpath += filename;
+                    const char* ccharp_readpath = readpath.c_str();
+                    std::string fileContents = std::to_string(system(ccharp_readpath));
+                    std::string cleanedFileContents = "";
+
+                    for (int i = 0; i < fileContents.size(); ++i) {
+                        if (i >= fileContents.size() - 1 && fileContents[i] == '0') {
+                            break;
+                        } else {
+                            cleanedFileContents += fileContents[i];
+                        }
+                    }
+
+                    std::cout << cleanedFileContents << std::endl;
                 }
 
         }
