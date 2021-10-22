@@ -17,6 +17,7 @@ setup () {
     echo "highlight INT_KEYWORD ctermfg=yellow" >> ~/.vimrc
     echo "highlight STRING ctermfg=green" >> ~/.vimrc
     echo "highlight COMMENT ctermfg=blue" >> ~/.vimrc
+    echo "highlight INTEGER ctermfg=magenta" >> ~/.vimrc
 }
 
 

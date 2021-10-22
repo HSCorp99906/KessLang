@@ -42,6 +42,7 @@ echo "highlight BAK ctermfg=red" >> ~/.vimrc
 echo "highlight INT_KEYWORD ctermfg=yellow" >> ~/.vimrc
 echo "highlight STRING ctermfg=green" >> ~/.vimrc
 echo "highlight COMMENT ctermfg=blue" >> ~/.vimrc
+echo "highlight INTEGER ctermfg=magenta" >> ~/.vimrc
 
 vimfile=$(find ~/.vim | head -n 1)
 
@@ -57,7 +58,6 @@ then
         exit
     fi
 else
-    > ~/.vim/syntax/kess.vim
     rm ~/.vim/syntax
     mkdir ~/.vim/syntax
     mv syntax.vim ~/.vim/syntax/kess.vim
