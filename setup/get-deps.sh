@@ -6,6 +6,7 @@ then
 else
     apt-get update
     apt-get install g++
+    apt-get install gcc
     apt-get install make
     apt-get install vim
 fi
