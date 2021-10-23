@@ -305,8 +305,13 @@ void parseAndPrepare(std::string line) {
                 filename += line[i];
             }
 
-            if (!(std::filesystem::exists(filename))) {
+            std::ifstream readfile(filename);
+
+            if (!(readfile)) {
+                readfile.close();
                 exit_err("ERROR: File \"" + filename + "\"" + " does not exist on line: " + std::to_string(lineNum));
+            } else {
+                readfile.close();
             }
         }
 

@@ -8,7 +8,6 @@
 #include <bits/stdc++.h>
 #include <regex>
 #include <vector>
-#include <filesystem>
 
 
 void parseAndPrepare(std::string line);
