@@ -4,3 +4,4 @@ syntax match INT_KEYWORD /int/
 syntax region STRING start=/"/ skip=/\\"/ end=/"/
 syntax match COMMENT /\/\/.*/
 syntax match INTEGER /[0-9]/
+syntax match FILE_READ_OUT /__file_read_out__/

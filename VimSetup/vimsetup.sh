@@ -18,6 +18,7 @@ setup () {
     echo "highlight STRING ctermfg=green" >> ~/.vimrc
     echo "highlight COMMENT ctermfg=blue" >> ~/.vimrc
     echo "highlight INTEGER ctermfg=magenta" >> ~/.vimrc
+    echo "highlight FILE_READ_OUT ctermfg=darkmagenta" >> ~/.vimrc
 }
 
 
