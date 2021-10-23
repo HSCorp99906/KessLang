@@ -563,7 +563,7 @@ void execute() {
                         filename += line[i];
                     }
 
-                    std::string readpath = "../src/FileHandling/READ ";
+                    std::string readpath = "~/KessLang/src/FileHandling/READ ";
                     readpath += filename;
                     const char* ccharp_readpath = readpath.c_str();
                     std::string fileContents = std::to_string(system(ccharp_readpath));
