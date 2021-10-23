@@ -21,7 +21,8 @@ enum BuiltIn : unsigned int {
     POST_INC = 5,
     PRE_DEC = 6,
     POST_DEC = 7,
-    FILE_READ_OUT = 8
+    FILE_READ_OUT = 8,
+    STRING_DEF = 9
 };
 
 
@@ -87,6 +88,9 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (parse == "__file_read_out__") {
             builtInUsed = FILE_READ_OUT;
+            break;
+        } else if (parse == "str") {
+            builtInUsed = STRING_DEF;
             break;
         }
     }
@@ -276,22 +280,42 @@ void parseAndPrepare(std::string line) {
 
             break;
         case FILE_READ_OUT:
-            for (int i = 0; i < line.size(); ++i) {
-                if (line[i] == '"' && !(openQuote)) {
-                    openQuote = true;
-                } else if (line[i] == '"' && openQuote) {
-                    closedQuote = true;
-                } else if (line[i] == '"' && openQuote && closedQuote) {
-                    exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
+            {
+                for (int i = 0; i < line.size(); ++i) {
+                    if (line[i] == '"' && !(openQuote)) {
+                        openQuote = true;
+                    } else if (line[i] == '"' && openQuote) {
+                        closedQuote = true;
+                    } else if (line[i] == '"' && openQuote && closedQuote) {
+                        exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
+                    }
+
+                    if (line[i] == '(' && !(openParen)) {
+                        openParen = true;
+                    } else if (line[i] == ')' && !(closedParen)) {
+                        closedParen = true;
+                    } else if (line[i] == '(' && openParen || line[i] == ')' && closedParen) {
+                        exit_err("ERROR: Too many parenthesis on line: " + std::to_string(lineNum));
+                    }
+            }
+
+                break;
+        case STRING_DEF:
+            {
+                unsigned short int quotes = 0;
+
+                for (int i = line.size() - 2; i > -1; --i) {
+                    if (line[i] == '"') {
+                        ++quotes;
+                    }
                 }
 
-                if (line[i] == '(' && !(openParen)) {
-                    openParen = true;
-                } else if (line[i] == ')' && !(closedParen)) {
-                    closedParen = true;
-                } else if (line[i] == '(' && openParen || line[i] == ')' && closedParen) {
-                    exit_err("ERROR: Too many parenthesis on line: " + std::to_string(lineNum));
+                if (quotes > 2) {
+                    exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
                 }
+            }
+
+            break;
         }
 
         if (!(openParen) || !(closedParen)) {
@@ -328,6 +352,8 @@ void parseAndPrepare(std::string line) {
 
 void execute() {
     std::map<std::string, short int> intVars;
+    std::map<std::string, std::string> stringVars;
+
     Token rtToken;
     unsigned int internalLineNum = 0;
     bool canPrintVar = true;
@@ -442,7 +468,11 @@ void execute() {
                             }
                         }
                     } else {
-                        exit_err("RUNTIME ERROR: Trying to print non-existing var on line: " + std::to_string(lineNum));
+                        if (stringVars.count(key)) {
+                            std::cout << stringVars[key] << std::endl;
+                        } else {
+                            exit_err("RUNTIME ERROR: Trying to print non-existing var on line: " + std::to_string(internalLineNum));
+                        }
                     }
                 }
 
@@ -576,6 +606,32 @@ void execute() {
 
                     std::cout << fileContents << std::endl;
                 }
+
+                break;
+
+            case STRING_DEF:
+                {
+                    std::string varKey = "";
+                    std::string varVal = "";
+
+                    for (int i = 4; i < line.size() - 1; ++i) {
+                        if (line[i] != ' ') {
+                            varKey += line[i];
+                        } else {
+                            for (int j = i + 3; j < line.size() - 1; ++j) {
+                                if (line[j] != '"') {
+                                    varVal += line[j];
+                                }
+                            }
+
+                            break;
+                        }
+                    }
+
+                    stringVars[varKey] = varVal;
+                }
+
+                break;
 
         }
     }
