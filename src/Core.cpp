@@ -324,7 +324,7 @@ void parseAndPrepare(std::string line) {
                 if (quotes > 2) {
                     exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
                 } else if (quotes == 0) {
-                    exit_err("ERROR: No quotes on line: " + s)
+                    exit_err("ERROR: No quotes on line: " + std::to_string(lineNum));
                 }
             }
 
@@ -372,6 +372,42 @@ void execute() {
     bool canPrintVar = true;
     bool canPrint = true;
 
+    for (int i = 0; i < lines.size(); ++i) {
+        unsigned int biu;  // Built in used.
+        rtToken << lines[i];
+        rtToken.setBuiltIn(biu);
+
+        switch (biu) {
+            // INT DEF is up here due to bugs.
+            case INT_DEF:
+                {
+
+                    std::string varKey = "";
+                    std::string varVal = "";
+                    short int varValInt;
+
+                    for (int j = 4; j < lines[i].size(); j++) {
+                        if (lines[i][j] != ' ') {
+                            varKey += lines[i][j];
+                        } else {
+                            for (int e = j + 3; e < lines[i].size() - 1; ++e) {
+                                varVal += lines[i][e];
+                            }
+
+                            break;
+                        }
+                    }
+
+                    std::stringstream toInt(varVal);
+                    toInt >> varValInt;
+
+                    intVars[varKey] = varValInt;
+                }
+
+                break;
+        }
+    }
+
     std::vector<std::string> to_ignore;  // Lines to ignore.
     for (int _line = 0; _line < lines.size(); ++_line) {
         canPrintVar = true;
@@ -386,38 +422,6 @@ void execute() {
         std::string line = lines[_line];
         unsigned int builtInUsed;
 
-        if (outStringCalled) {
-            std::cout << outs[internalLineNum] << std::endl;
-            for (int i = _line; i < lines.size(); ++i) {
-                rtToken << lines[i];
-                rtToken.setBuiltIn(builtInUsed);
-
-                if (builtInUsed == INT_DEF) {
-                    for (int j = 4; lines[i][j] != ' ' && j < lines[i].size(); ++j) {
-                        varKey += lines[i][j];
-                    }
-
-                    for (int j = 4; j < lines[i].size() - 3; ++j) {
-                        if (lines[i][j] == '=') {
-                            for (int e = j; e < lines[i].size() - 1; ++e) {
-                                if (lines[i][e] != '=' && lines[i][e] != ' ') {
-                                    varValString += lines[i][e];
-                                }
-                            }
-
-                            break;
-                        }
-                    }
-
-                    toInt << varValString;
-                    toInt >> varVal;
-                    intVars[varKey] = varVal;
-                    to_ignore.push_back(lines[i]);
-                    break;
-                }
-            }
-        }
-
         rtToken << line;
         rtToken.setBuiltIn(builtInUsed);
 
@@ -429,74 +433,38 @@ void execute() {
 
         bool quote = false;
 
+        if (builtInUsed)
+
         if (possibleVar) {
             canPrintVar = true;
         }
 
         bool ignore = false;
 
-        std::string command = "";
-
         switch (builtInUsed) {
             case OUT:
-                for (int i = 0; i < 3; ++i) {
-                    command += line[i];
-                }
-
-                for (int i = 0; i < lines[_line].size(); ++i) {
-                    if (lines[_line][i] == '"') {
-                        possibleVar = false;
-                        quote = true;
-                    }
-                }
-
-                if (!(quote)) {
+                if (lines[_line][4] == '"') {
+                    possibleVar = false;
+                } else {
                     possibleVar = true;
-                    std::string posvar;
-                    rtToken ^ posvar;
-                    if (std::regex_match(posvar, std::regex("[0-9]+"))) {
-                        possibleVar = false;
-                    }
                 }
 
-                if (possibleVar) {
-                    std::string key;
-
-                    if (!(outStringCalled)) {
-                        rtToken ^ key;
-                    } else {
-                        rtToken << lines[lineNum - 1];
-                        rtToken ^ key;
-                        outStringCalled = false;
-                    }
-
-                    if (intVars.count(key)) {
-                        if (canPrintVar) {
-                            std::string val = "";
-
-                            if (canPrintVar) {
-                                canPrintVar = false;
-                                canPrint = false;
-                                std::cout << intVars[key] << std::endl;
-                            }
-                        }
-                    } else {
-                        if (stringVars.count(key)) {
-                            std::cout << stringVars[key] << std::endl;
+                if (!(possibleVar)) {
+                    rtToken ^ stdoutBuffer;
+                    std::cout << stdoutBuffer << std::endl;
+                } else {
+                    rtToken ^ varKey;
+                    if (!(intVars.count(varKey))) {
+                        if (!(stringVars.count(varKey))) {
+                            exit_err("RUNTIME ERROR: Trying to output non-existing var on line: " + std::to_string(internalLineNum));
                         } else {
-                            exit_err("RUNTIME ERROR: Trying to print non-existing var on line: " + std::to_string(internalLineNum));
+                            std::cout << stringVars[varKey] << std::endl;
                         }
+                    } else {
+                        std::cout << intVars[varKey] << std::endl;
                     }
                 }
 
-                    if (!(possibleVar) && command == "out" && canPrint && !(outStringCalled)) {
-                        rtToken ^ stdoutBuffer;
-                        std::cout << stdoutBuffer << std::endl;
-                    }
-
-                outStringCalled = false;
-                command = "";
-                possibleVar = false;
                 break;
             case BACKWARD:
                 rtToken ^ stdoutBuffer;
@@ -506,37 +474,6 @@ void execute() {
                 }
 
                 std::cout << stdoutBakBuffer << std::endl;
-                break;
-            case INT_DEF:
-                for (int i = 4; line[i] != ' ' && i < line.size() - 1; ++i) {
-                    varKey += line[i];
-                }
-
-                for (int i = 4; i < line.size() - 1; ++i) {
-                    if (line[i] == '=') {
-                        for (int j = i; j < line.size() - 1; ++j) {
-                            if (line[j] != '=' && line[j] != ' ') {
-                                varValString += line[j];
-                            }
-                        }
-
-                        break;
-                    }
-                }
-
-                for (int i = 0; i < to_ignore.size(); ++i) {
-                    if (line == to_ignore[i]) {
-                        ignore = true;
-                    }
-                }
-
-                if (!(ignore)) {
-                    toInt << varValString;
-                    toInt >> varVal;
-                    intVars[varKey] = varVal;
-                }
-
-
                 break;
             case PRE_INC:
                 for (int i = 2; i < line.size() - 1; ++i) {
