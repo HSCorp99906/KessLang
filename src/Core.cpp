@@ -323,6 +323,8 @@ void parseAndPrepare(std::string line) {
 
                 if (quotes > 2) {
                     exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
+                } else if (quotes == 0) {
+                    exit_err("ERROR: No quotes on line: " + std::to_string(lineNum));
                 }
             }
 
