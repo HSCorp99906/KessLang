@@ -18,11 +18,32 @@ int main(int argc, char* argv[]) {
     }
 
     std::string line;
+    std::string parse = "";
 
     while (std::getline(src, line)) {
         if (line == "") {
             ++lineNum;
             continue;
+        }
+
+        for (int i = 0; i < line.size(); ++i) {
+            parse += line[i];
+            if (parse == "__file_read_out__") {
+                std::string newFilename = argv[2];
+                newFilename += '/';
+                bool begin = true;
+
+                for (int j = 19; j < line.size() - 3; ++j) {
+                    if (line[j] == '/' && begin) {
+                        newFilename = "";
+                    } else {
+                        begin = false;
+                    }
+
+                    newFilename += line[j];
+                }
+
+            }
         }
 
         parseAndPrepare(line);
