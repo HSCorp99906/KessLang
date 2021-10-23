@@ -302,12 +302,23 @@ void parseAndPrepare(std::string line) {
                 break;
         case STRING_DEF:
             {
+                bool defined = false;
                 unsigned short int quotes = 0;
 
                 for (int i = line.size() - 2; i > -1; --i) {
                     if (line[i] == '"') {
                         ++quotes;
                     }
+
+                    if (line[i] == '=' && !(defined)) {
+                        defined = true;
+                    } else if (line[i] == '=' && defined) {
+                        exit_err("ERROR: Too many equal operators on line: " + std::to_string(lineNum));
+                    }
+                }
+
+                if (!(defined)) {
+                    exit_err("ERROR: Implicit variable found on line: " + std::to_string(lineNum));
                 }
 
                 if (quotes > 2) {
