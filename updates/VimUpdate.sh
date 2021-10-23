@@ -43,6 +43,7 @@ echo "highlight INT_KEYWORD ctermfg=yellow" >> ~/.vimrc
 echo "highlight STRING ctermfg=green" >> ~/.vimrc
 echo "highlight COMMENT ctermfg=blue" >> ~/.vimrc
 echo "highlight INTEGER ctermfg=magenta" >> ~/.vimrc
+echo "syntax match FILE_READ_OUT /__file_read_out__/" >> ~/.vimrc
 
 vimfile=$(find ~/.vim | head -n 1)
 
