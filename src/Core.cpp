@@ -487,7 +487,7 @@ void execute() {
                         ++intVars[varKey];
                     }
                 } else {
-                    exit_err("RUNTIME ERROR: Trying to increment non-existing var on line: " + std::to_string(internalLineNum));
+                    exit_err("RUNTIME ERROR: Either incrementing non-existing var or var is not int. Issue on line: " + std::to_string(internalLineNum));
                 }
 
                 break;
@@ -503,7 +503,7 @@ void execute() {
                         ++intVars[varKey];
                     }
                 } else {
-                    exit_err("RUNTIME ERROR: Trying to increment non-existing var on line: " + std::to_string(internalLineNum));
+                    exit_err("RUNTIME ERROR: Either incrementing non-existing var or var is not int. Issue on line: " + std::to_string(internalLineNum));
                 }
 
                 break;
@@ -519,7 +519,7 @@ void execute() {
                         --intVars[varKey];
                     }
                 } else {
-                    exit_err("RUNTIME ERROR: Trying to decrement non-existing var on line: " + std::to_string(internalLineNum));
+                    exit_err("RUNTIME ERROR: Either decrementing non-existing var or var is not int. Issue on line: " + std::to_string(internalLineNum));
                 }
 
                 break;
@@ -535,7 +535,7 @@ void execute() {
                         --intVars[varKey];
                     }
                 } else {
-                    exit_err("RUNTIME ERROR: Trying to decrement non-existing var on line: " + std::to_string(internalLineNum));
+                    exit_err("RUNTIME ERROR: Either decrementing non-existing var or var is not int. Issue on line: " + std::to_string(internalLineNum));
                 }
 
                 break;
