@@ -549,13 +549,23 @@ void execute() {
 
                 if (!(possibleVar)) {
                     rtToken ^ stdoutBuffer;
-                    if (std::regex_match(stdoutBuffer, std::regex(".\\s*==\\s*."))) {
+                    if (std::regex_match(stdoutBuffer, std::regex("[a-zA-Z0-9]\\s*==\\s*[a-zA-Z0-9]"))) {
                         std::string val1 = "";
                         std::string val2 = "";
 
-                        std::smatch match;
+                        unsigned short int quotes = 0;
 
-                        bool firstValCaptured = false;
+                        for (int i = 0; i < lines[_line].size(); ++i) {
+                            if (lines[_line][i] == '"') {
+                                ++quotes;
+                            }
+                        }
+
+                        if (quotes > 4 || quotes < 4 && quotes > 0) {
+                            exit_err("RUNTIME ERROR CODE 564: Syntax error on line " + std::to_string(internalLineNum));
+                        }
+
+                        std::smatch match;
 
                         std::regex_search(stdoutBuffer, match, std::regex("^[a-zA-Z0-9]+"));
 
@@ -570,6 +580,41 @@ void execute() {
                         }
 
                         if (val1 == val2) {
+                            std::cout << "true" << std::endl;
+                        } else {
+                            std::cout << "false" << std::endl;
+                        }
+                    } else if (std::regex_match(stdoutBuffer, std::regex("[a-zA-Z0-9]\\s*!=\\s*[a-zA-Z0-9]"))) {
+                        std::string val1 = "";
+                        std::string val2 = "";
+
+                        unsigned short int quotes = 0;
+
+                        for (int i = 0; i < lines[_line].size(); ++i) {
+                            if (lines[_line][i] == '"') {
+                                ++quotes;
+                            }
+                        }
+
+                        if (quotes > 4 || quotes < 4 && quotes > 0) {
+                            exit_err("RUNTIME ERROR CODE 600: Syntax error on line " + std::to_string(internalLineNum));
+                        }
+
+                        std::smatch match;
+
+                        std::regex_search(stdoutBuffer, match, std::regex("^[a-zA-Z0-9]+"));
+
+                        for (auto i: match) {
+                            val1 += i;
+                        }
+
+                        std::regex_search(stdoutBuffer, match, std::regex("[a-zA-Z0-9]+$"));
+
+                        for (auto i: match) {
+                            val2 += i;
+                        }
+
+                        if (val1 != val2) {
                             std::cout << "true" << std::endl;
                         } else {
                             std::cout << "false" << std::endl;
