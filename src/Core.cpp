@@ -10,6 +10,10 @@ bool possibleVar = false;
 bool outStringCalled = false;
 std::map<unsigned int, std::string> outs;
 std::vector<std::string> lines;
+std::ofstream outFile;
+std::vector<std::string> cb_files;
+
+unsigned int c_blocks = 0;
 
 
 enum BuiltIn : unsigned int {
@@ -22,7 +26,10 @@ enum BuiltIn : unsigned int {
     PRE_DEC = 6,
     POST_DEC = 7,
     FILE_READ_OUT = 8,
-    STRING_DEF = 9
+    STRING_DEF = 9,
+    C_CODE = 10,
+    END = 11,
+    NEWLINE = 12
 };
 
 
@@ -92,6 +99,15 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (parse == "str") {
             builtInUsed = STRING_DEF;
             break;
+        } else if (parse == "C_START:") {
+            builtInUsed = C_CODE;
+            break;
+        } else if (parse == "______END______") {
+            builtInUsed = END;
+            break;
+        } else if (parse == "\n") {
+            builtInUsed == NEWLINE;
+            break;
         }
     }
 }
@@ -104,7 +120,7 @@ void exit_err(std::string message) {
 }
 
 
-void parseAndPrepare(std::string line) {
+void parseAndPrepare(std::string line, std::string ed) {
 
     std::string noCommentLine = "";
     bool endOfLine = false;
@@ -135,10 +151,6 @@ void parseAndPrepare(std::string line) {
     ptToken << line;
     ptToken.setBuiltIn(builtInUsed);
 
-    if (line[line.size() - 1] != ';') {
-        exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
-    }
-
     bool openParen = false;
     bool closedParen = false;
     bool openQuote = false;
@@ -152,6 +164,14 @@ void parseAndPrepare(std::string line) {
     std::stringstream intStream;
     std::string varBuffer = "";
     std::regex findInt("[0-9\\-]+");
+
+    static bool c_def = false;
+    static bool c_def_end = false;
+    static std::string current_c_block = "";
+
+    if (c_def) {
+        builtInUsed = C_CODE;
+    }
 
     switch (builtInUsed) {
         case OUT:
@@ -297,9 +317,31 @@ void parseAndPrepare(std::string line) {
                     } else if (line[i] == '(' && openParen || line[i] == ')' && closedParen) {
                         exit_err("ERROR: Too many parenthesis on line: " + std::to_string(lineNum));
                     }
+
+                    if (!(openParen) || !(closedParen)) {
+                        exit_err("ERROR: Missing parenthesis on line: " + std::to_string(lineNum));
+                    }
+
+                    {
+
+                    std::string filename = "";
+
+                    for (int i = 19; i < line.size() - 3; ++i) {
+                        filename += line[i];
+                    }
+
+                    std::ifstream readfile(filename);
+
+                    if (!(readfile)) {
+                        readfile.close();
+                        exit_err("ERROR: File \"" + filename + "\"" + " does not exist on line: " + std::to_string(lineNum));
+                    } else {
+                        readfile.close();
+                    }
+                }
             }
 
-                break;
+            break;
         case STRING_DEF:
             {
                 bool defined = false;
@@ -329,26 +371,37 @@ void parseAndPrepare(std::string line) {
             }
 
             break;
-        }
+        case C_CODE:
+            {
 
-        if (!(openParen) || !(closedParen)) {
-            exit_err("ERROR: Missing parenthesis on line: " + std::to_string(lineNum));
-        }
+                if (!(c_def)) {
+                    c_def = true;
+                    ++c_blocks;
+                    std::string fileName = ".kesslangC_";
+                    fileName += std::to_string(c_blocks);
+                    cb_files.push_back(fileName);
 
-        {
-            std::string filename = "";
+                    outFile.open(fileName);
+                }
 
-            for (int i = 19; i < line.size() - 3; ++i) {
-                filename += line[i];
-            }
+                line += "\n";
 
-            std::ifstream readfile(filename);
+                std::string lineCopy = std::regex_replace(line, std::regex("C_START:"), "");
+                lineCopy = std::regex_replace(lineCopy, std::regex("C_END"), "");
 
-            if (!(readfile)) {
-                readfile.close();
-                exit_err("ERROR: File \"" + filename + "\"" + " does not exist on line: " + std::to_string(lineNum));
-            } else {
-                readfile.close();
+                outFile << lineCopy;
+
+                std::string _line = "";
+                std::smatch match;
+
+                std::regex_search(line, match, std::regex("C_END"));
+
+                for (auto i: match) {
+                    if (i == "C_END") {
+                        c_def_end = true;
+                        break;
+                    }
+                }
             }
         }
 
@@ -358,6 +411,33 @@ void parseAndPrepare(std::string line) {
         exit_err("ERROR: Lingering parenthesis on line: " + std::to_string(lineNum));
     } else if (openQuote && !(closedQuote) || !(openQuote) && closedQuote) {
         exit_err("ERROR: Lingering quotes on line: " + std::to_string(lineNum));
+    }
+
+    std::smatch match;
+
+    std::regex_search(line, match, std::regex("______END______;"));
+
+    for (auto i: match) {
+        if (c_def && !(c_def_end) && i == "______END______;")  {
+            outFile.close();
+            exit_err("ERROR: Expected \"C_END\" on line: " + std::to_string(lineNum - 1));
+        }
+    }
+
+    if (line[line.size() - 1] != ';' && !(c_def)) {
+        exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
+    }
+
+    if (c_def_end) {
+        c_def = false;
+        c_def_end = false;
+        outFile.close();
+        std::string command = "python3 ../src/Utility/CleanCBlock.py ";
+        command += ed.c_str();
+        command += " ";
+        command += " .kesslangC_";
+        command += std::to_string(c_blocks).c_str();
+        system(command.c_str());
     }
 
 }
@@ -371,6 +451,7 @@ void execute() {
     unsigned int internalLineNum = 0;
     bool canPrintVar = true;
     bool canPrint = true;
+    bool c_block = false;
 
     for (int i = 0; i < lines.size(); ++i) {
         unsigned int biu;  // Built in used.
@@ -432,6 +513,10 @@ void execute() {
         bool closedQuote = false;
 
         bool quote = false;
+
+        if (c_block && lines[_line] == "C_START:") {
+            c_block = true;
+        }
 
         if (builtInUsed)
 
@@ -582,9 +667,26 @@ void execute() {
                 }
 
                 break;
+            case C_CODE:
+                outFile.close();
+                if (!(c_block)) {
+                    c_block = true;
+                    for (int i = 0; i < cb_files.size(); ++i) {
+                        std::string command = "mv ";
+                        command += cb_files[i];
+                        command += " .kesslangC.c";
+                        system(command.c_str());
+                        system("gcc .kesslangC.c -o .kesslangC");
+                        std::cout << system("./.kesslangC") << std::endl;
+                        system("rm .kesslangC .kesslangC.c");
+                    }
+                }
 
+                break;
         }
     }
+
+    outFile.close();
 }
 
 

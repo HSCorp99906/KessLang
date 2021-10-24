@@ -9,8 +9,7 @@
 #include <regex>
 #include <vector>
 
-
-void parseAndPrepare(std::string line);
+void parseAndPrepare(std::string line, std::string ed);
 
 void execute();
 
