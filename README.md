@@ -40,7 +40,7 @@ bak("Backwards text.")
 
 > How do I make variables?
 
-Glad you asked this is how.
+Glad you asked, this is how.
 
 ###### STRING VAR
 ```
@@ -78,6 +78,6 @@ C_END
 ```
 
 
-## Questions.
+## Questions?
 
 ***Email me at teaqllabs@gmail.com***
