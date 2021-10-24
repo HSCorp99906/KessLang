@@ -114,6 +114,7 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
 
 void exit_err(std::string message) {
     extern std::ifstream src;
+    outFile.close();
     std::cout << message << std::endl;
     src.close();
     exit(1);
