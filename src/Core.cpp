@@ -169,8 +169,12 @@ void parseAndPrepare(std::string line, std::string ed) {
     static bool c_def_end = false;
     static std::string current_c_block = "";
 
-    if (c_def) {
+    if (c_def && !(c_def_end)) {
         builtInUsed = C_CODE;
+    } else if (c_def_end) {
+        c_def = false;
+        builtInUsed = NEWLINE;
+        line = "\n;";
     }
 
     switch (builtInUsed) {
@@ -373,6 +377,7 @@ void parseAndPrepare(std::string line, std::string ed) {
             break;
         case C_CODE:
             {
+                c_def_end = false;
 
                 if (!(c_def)) {
                     c_def = true;
@@ -413,6 +418,21 @@ void parseAndPrepare(std::string line, std::string ed) {
         exit_err("ERROR: Lingering quotes on line: " + std::to_string(lineNum));
     }
 
+    if (line[line.size() - 1] != ';' && !(c_def)) {
+        exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
+    }
+
+    if (c_def_end) {
+        c_def = false;
+        outFile.close();
+        std::string command = "python3 ../src/Utility/CleanCBlock.py ";
+        command += ed.c_str();
+        command += " ";
+        command += " .kesslangC_";
+        command += std::to_string(c_blocks).c_str();
+        system(command.c_str());
+    }
+
     std::smatch match;
 
     std::regex_search(line, match, std::regex("______END______;"));
@@ -422,22 +442,6 @@ void parseAndPrepare(std::string line, std::string ed) {
             outFile.close();
             exit_err("ERROR: Expected \"C_END\" on line: " + std::to_string(lineNum - 1));
         }
-    }
-
-    if (line[line.size() - 1] != ';' && !(c_def)) {
-        exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
-    }
-
-    if (c_def_end) {
-        c_def = false;
-        c_def_end = false;
-        outFile.close();
-        std::string command = "python3 ../src/Utility/CleanCBlock.py ";
-        command += ed.c_str();
-        command += " ";
-        command += " .kesslangC_";
-        command += std::to_string(c_blocks).c_str();
-        system(command.c_str());
     }
 
 }
@@ -677,7 +681,10 @@ void execute() {
                         command += " .kesslangC.c";
                         system(command.c_str());
                         system("gcc .kesslangC.c -o .kesslangC");
-                        std::cout << system("./.kesslangC") << std::endl;
+
+                        std::string _exec = std::to_string(system("./.kesslangC"));
+                        _exec = std::regex_replace(_exec, std::regex("\\d$"), "");
+                        std::cout << _exec << std::endl;
                         system("rm .kesslangC .kesslangC.c");
                     }
                 }
