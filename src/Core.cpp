@@ -539,9 +539,42 @@ void execute() {
                     possibleVar = true;
                 }
 
+                {
+                    std::string parenContent;
+                    rtToken ^ parenContent;
+                    if (std::regex_match(parenContent, std::regex("(\"[a-zA-Z0-9]+\"{1}\\s*==\\s*\"{1}[A-Za-z0-9]+\"{1}|\"[A-Za-z0-9]+\"{1}\\s*!=\\s*\"{1}[A-Za-z0-9]+\"{1}|\\d+\\s*==\\s*\\d+|\\d+\\s*!=\\s*\\d+)"))) {
+                        possibleVar = false;
+                    }
+                }
+
                 if (!(possibleVar)) {
                     rtToken ^ stdoutBuffer;
-                    std::cout << stdoutBuffer << std::endl;
+                    if (std::regex_match(stdoutBuffer, std::regex(".\\s*==\\s*."))) {
+                        std::string val1 = "";
+                        std::string val2 = "";
+
+                        std::smatch match;
+
+                        bool firstValCaptured = false;
+
+                        std::regex_search(stdoutBuffer, match, std::regex("^[a-zA-Z0-9]+"));
+
+                        for (auto i: match) {
+                            val1 += i;
+                        }
+
+                        std::regex_search(stdoutBuffer, match, std::regex("[a-zA-Z0-9]+$"));
+
+                        for (auto i: match) {
+                            val2 += i;
+                        }
+
+                        if (val1 == val2) {
+                            std::cout << "true" << std::endl;
+                        } else {
+                            std::cout << "false" << std::endl;
+                        }
+                    }
                 } else {
                     rtToken ^ varKey;
                     if (!(intVars.count(varKey))) {
