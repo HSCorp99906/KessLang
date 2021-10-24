@@ -36,6 +36,7 @@ then
 fi
 
 > ~/.vimrc
+echo "Setting up highlighting.."
 echo "syntax on" >> ~/.vimrc
 echo "highlight OUT ctermfg=red" >> ~/.vimrc
 echo "highlight BAK ctermfg=red" >> ~/.vimrc
@@ -44,7 +45,8 @@ echo "highlight STRING ctermfg=green" >> ~/.vimrc
 echo "highlight COMMENT ctermfg=blue" >> ~/.vimrc
 echo "highlight INTEGER ctermfg=magenta" >> ~/.vimrc
 echo "highlight FILE_READ_OUT ctermfg=darkmagenta" >> ~/.vimrc
-echo "highlight STRING_KEYWORD ctermfg=yellow"
+echo "highlight c_start ctermfg=magenta" >> ~/.vimrc
+echo "highlight c_end ctermfg=magenta" >> ~/.vimrc
 
 vimfile=$(find ~/.vim | head -n 1)
 
