@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 
     while (std::getline(src, line)) {
         if (line == "") {
-            parseAndPrepare("\n", argv[2]);
+            parseAndPrepare("__EMPTY__;", argv[2]);
             continue;
         }
 

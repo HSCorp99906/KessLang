@@ -425,7 +425,7 @@ void parseAndPrepare(std::string line, std::string ed) {
     if (c_def_end) {
         c_def = false;
         outFile.close();
-        std::string command = "python3 ../src/Utility/CleanCBlock.py ";
+        std::string command = "python3 ~/KessLang/src/Utility/CleanCBlock.py ";
         command += ed.c_str();
         command += " ";
         command += " .kesslangC_";
