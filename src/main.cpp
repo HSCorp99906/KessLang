@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 
     while (std::getline(src, line)) {
         if (line == "") {
-            ++lineNum;
+            parseAndPrepare("\n", argv[2]);
             continue;
         }
 
@@ -46,8 +46,10 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        parseAndPrepare(line);
+        parseAndPrepare(line, argv[2]);
     }
+
+    parseAndPrepare("______END______;", argv[2]);
 
     src.close();
 
