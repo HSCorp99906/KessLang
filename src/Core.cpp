@@ -30,7 +30,9 @@ enum BuiltIn : unsigned int {
     C_CODE = 10,
     END = 11,
     NEWLINE = 12,
-    IF_STATEMENT = 13
+    IF_STATEMENT = 13,
+    IN = 14,
+    STOP = 15,
 };
 
 
@@ -111,6 +113,9 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (parse == "if") {
             builtInUsed = IF_STATEMENT;
+            break;
+        } else if (parse == "stop") {
+            builtInUsed = STOP;
             break;
         }
     }
@@ -368,6 +373,7 @@ void parseAndPrepare(std::string line, std::string ed) {
                     }
 
                     if (!(std::regex_match(parseCondition, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
+                        std::cout << parseCondition << std::endl;
                         exit_err("ERROR: Syntax error with if statement on line: " + std::to_string(lineNum));
                     }
                 } else if (ifBlockBegin) {
@@ -418,7 +424,19 @@ void parseAndPrepare(std::string line, std::string ed) {
                 if (quotes > 2) {
                     exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
                 } else if (quotes == 0) {
-                    exit_err("ERROR: No quotes on line: " + std::to_string(lineNum));
+                    std::string parse = "";
+                    bool error = true;
+
+                    for (int i = 8; i < line.size() - 1; ++i) {
+                        parse += line[i];
+                        if (parse == "in") {
+                            error = false;
+                        }
+                    }
+
+                    if (error) {
+                        exit_err("ERROR: No quotes on line: " + std::to_string(lineNum));
+                    }
                 }
             }
 
@@ -867,14 +885,59 @@ void execute() {
                 {
                     std::string varKey = "";
                     std::string varVal = "";
+                    std::string inputVarVal = "";
+                    bool setVarDefault = true;
+                    bool quotes = false;
 
                     for (int i = 4; i < line.size() - 1; ++i) {
                         if (line[i] != ' ') {
                             varKey += line[i];
                         } else {
                             for (int j = i + 3; j < line.size() - 1; ++j) {
+                                if (line[j] == '"') {
+                                    quotes = true;
+                                }
+
                                 if (line[j] != '"') {
                                     varVal += line[j];
+
+                                    if (varVal == "in" && !(quotes)) {
+                                        setVarDefault = false;
+
+                                        bool openParen = false;
+                                        bool closedParen = false;
+                                        unsigned short int quoteCount = 0;
+
+                                        for (int e = j + 1; e < line.size() - 1; ++e) {
+                                            if (line[e] == '(') {
+                                                if (openParen) {
+                                                    exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                                }
+
+                                                openParen = true;
+                                            } else if (line[e] == '"') {
+                                                if (quoteCount > 2) {
+                                                    exit_err("RUNTIME ERROR: Too many quotes on line: " + std::to_string(internalLineNum));
+                                                }
+
+                                                ++quoteCount;
+                                            } else if (line[e] == ')') {
+                                                if (closedParen) {
+                                                    exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                                }
+
+                                                closedParen = true;
+                                            } else {
+                                                inputVarVal += line[e];
+                                            }
+                                        }
+
+                                        if (quoteCount == 0) {
+                                            exit_err("RUNTIME ERROR: Variables as input title is not supported currently, error on line: " + std::to_string(internalLineNum));
+                                        } else if (openParen && !(closedParen) || !(openParen) && closedParen) {
+                                            exit_err("RUNTIME ERROR: Missing parenthesis on line " + std::to_string(internalLineNum));
+                                        }
+                                    }
                                 }
                             }
 
@@ -882,7 +945,12 @@ void execute() {
                         }
                     }
 
-                    stringVars[varKey] = varVal;
+                    if (setVarDefault) {
+                        stringVars[varKey] = varVal;
+                    } else {
+                        std::cout << inputVarVal;
+                        std::cin >> stringVars[varKey];
+                    }
                 }
 
                 break;
@@ -905,6 +973,8 @@ void execute() {
                 }
 
                 break;
+            case STOP:
+                exit(0);
             case IF_STATEMENT:
                 {
                     if (!(readIfBlockCode)) {
