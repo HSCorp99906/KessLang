@@ -636,6 +636,7 @@ void execute() {
                     rtToken ^ stdoutBuffer;
                     std::string parsed = "";
 
+
                     if (std::regex_match(stdoutBuffer, std::regex("[a-zA-Z0-9]\\s*==\\s*[a-zA-Z0-9]"))) {
                         std::string val1 = "";
                         std::string val2 = "";
@@ -671,7 +672,7 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
-                    } else if (std::regex_match(stdoutBuffer, std::regex("[a-zA-Z0-9]\\s*!=\\s*[a-zA-Z0-9]"))) {
+                    } else if (std::regex_match(lines[_line], std::regex("out\\(\"{1}[a-zA-Z!@#$%^&*\\-<>,.';:\\[\\]\\s]+\"{1}\\s*!=\\s*\"{1}[a-zA-Z!@#$%^&*\\-<>,.';:\\[\\]\\s]+\"\\)"))) {
                         std::string val1 = "";
                         std::string val2 = "";
 
@@ -706,7 +707,7 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
-                    } else if (std::regex_match(stdoutBuffer, std::regex("\\d+\\s*>\\s*\\d+"))) {
+                    } else if (std::regex_match(lines[_line], std::regex("out\\(\\d+\\s*>\\s*\\d+\\);"))) {
                         std::string val1 = "";
                         std::string val2 = "";
 
@@ -729,7 +730,7 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
-                    } else if (std::regex_match(stdoutBuffer, std::regex("\\d+\\s*<\\s*\\d+"))) {
+                    } else if (std::regex_match(lines[_line], std::regex("out\\(\\d+\\s*<\\s*\\d+\\);"))) {
                         std::string val1 = "";
                         std::string val2 = "";
 
