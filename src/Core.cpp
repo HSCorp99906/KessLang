@@ -29,7 +29,8 @@ enum BuiltIn : unsigned int {
     STRING_DEF = 9,
     C_CODE = 10,
     END = 11,
-    NEWLINE = 12
+    NEWLINE = 12,
+    IF_STATEMENT = 13
 };
 
 
@@ -108,6 +109,9 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (parse == "\n") {
             builtInUsed == NEWLINE;
             break;
+        } else if (parse == "if") {
+            builtInUsed = IF_STATEMENT;
+            break;
         }
     }
 }
@@ -169,6 +173,10 @@ void parseAndPrepare(std::string line, std::string ed) {
     static bool c_def = false;
     static bool c_def_end = false;
     static std::string current_c_block = "";
+
+    static bool ifBlock = false;
+    static bool ifBlockBegin = false;
+    static unsigned short int indentLevel = 0;
 
     if (c_def && !(c_def_end)) {
         builtInUsed = C_CODE;
@@ -347,6 +355,45 @@ void parseAndPrepare(std::string line, std::string ed) {
             }
 
             break;
+        case IF_STATEMENT:
+            {
+                if (!(ifBlock)) {
+                    ifBlock = true;
+                    ifBlockBegin = true;
+
+                    std::string parseCondition = "";
+
+                    for (int i = 3; i < line.size() - 1; ++i) {
+                        parseCondition += line[i];
+                    }
+
+                    if (!(std::regex_match(parseCondition, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1})")))) {
+                        exit_err("ERROR: Syntax error with if statement on line: " + std::to_string(lineNum));
+                    }
+                } else if (ifBlockBegin) {
+                    ifBlockBegin = false;
+                    for (int i = 0; i < line.size() && line[i] == ' '; ++i) {
+                        ++indentLevel;
+                    }
+                } else {
+                    if (line[0] == ' ') {
+                        unsigned short int indentLevelMatch = 0;
+
+                        for (int i = 0; i < line.size() && line[i] == ' '; ++i) {
+                            ++indentLevelMatch;
+                        }
+
+                        if (indentLevelMatch != indentLevel) {
+                            exit_err("ERROR: Indent error on line: " + std::to_string(lineNum));
+                        }
+                    } else {
+                        ifBlockBegin = false;
+                        ifBlock = false;
+                    }
+                }
+            }
+
+            break;
         case STRING_DEF:
             {
                 bool defined = false;
@@ -419,7 +466,7 @@ void parseAndPrepare(std::string line, std::string ed) {
         exit_err("ERROR: Lingering quotes on line: " + std::to_string(lineNum));
     }
 
-    if (line[line.size() - 1] != ';' && !(c_def)) {
+    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT) {
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
 
@@ -458,6 +505,13 @@ void execute() {
     bool canPrint = true;
     bool c_block = false;
 
+    bool readIfBlockCode = false;
+    bool ifBlock = false;
+    bool pauseIfRead = false;
+    std::string ifLine;
+    bool isTrue = false;
+    unsigned int ifLineNum = 0;
+
     for (int i = 0; i < lines.size(); ++i) {
         unsigned int biu;  // Built in used.
         rtToken << lines[i];
@@ -494,6 +548,8 @@ void execute() {
         }
     }
 
+    unsigned int builtInUsed;
+
     std::vector<std::string> to_ignore;  // Lines to ignore.
     for (int _line = 0; _line < lines.size(); ++_line) {
         canPrintVar = true;
@@ -506,7 +562,6 @@ void execute() {
         int varVal;
 
         std::string line = lines[_line];
-        unsigned int builtInUsed;
 
         rtToken << line;
         rtToken.setBuiltIn(builtInUsed);
@@ -531,12 +586,42 @@ void execute() {
 
         bool ignore = false;
 
+        if (ifBlock && !(pauseIfRead)) {
+            builtInUsed = IF_STATEMENT;
+        }
+
+        if (pauseIfRead) {
+            pauseIfRead = false;
+            rtToken << ifLine;
+            rtToken.setBuiltIn(builtInUsed);
+        }
+
         switch (builtInUsed) {
             case OUT:
-                if (lines[_line][4] == '"') {
-                    possibleVar = false;
+                if (!(readIfBlockCode)) {
+                    if (lines[_line][4] == '"') {
+                        possibleVar = false;
+                    } else {
+                        possibleVar = true;
+                    }
                 } else {
-                    possibleVar = true;
+                    bool quote = false;
+
+                    for (int i = 0; i < lines[_line].size(); ++i) {
+                        if (lines[_line][i] == '"') {
+                            quote = true;
+                            break;
+                        }
+
+                        if (quote) {
+                            possibleVar = true;
+                        } else {
+                            possibleVar = false;
+                        }
+                    }
+
+                    pauseIfRead = false;
+                    ifBlock = true;
                 }
 
                 {
@@ -816,6 +901,103 @@ void execute() {
                     }
                 }
 
+                break;
+            case IF_STATEMENT:
+                {
+                    if (!(readIfBlockCode)) {
+                        readIfBlockCode = true;
+
+                        std::string empty_line = "";
+
+                        ifLineNum = _line;
+
+                        std::string condition = "";
+
+                        for (int i = 3; i < lines[_line].size() - 1; ++i) {
+                            condition += lines[_line][i];
+                        }
+
+                        if (std::regex_match(condition, std::regex("\\d+\\s*>\\s*\\d+"))) {
+                            std::string val1 = "";
+                            std::string val2 = "";
+
+                            int intVal1;
+                            int intVal2;
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("^[a-zA-Z0-9]+"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z0-9]+$"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            std::stringstream ss(val1);
+                            ss >> intVal1;
+                            ss.str(val2);
+                            ss >> intVal2;
+
+                            if (intVal1 > intVal2) {
+                                ifBlock = true;
+                                isTrue = true;
+                            }
+                        } else if (std::regex_match(condition, std::regex("\\d+\\s*<\\s*\\d+"))) {
+                            std::string val1 = "";
+                            std::string val2 = "";
+
+                            int intVal1;
+                            int intVal2;
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("^[a-zA-Z0-9]+"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z0-9]+$"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            std::stringstream ss(val1);
+                            ss >> intVal1;
+                            ss = std::stringstream(val2);
+                            ss >> intVal2;
+
+                            if (intVal1 < intVal2) {
+                                ifBlock = true;
+                                isTrue = true;
+                            }
+                        }
+                    } else if (readIfBlockCode && isTrue) {
+                        ifLine = "";
+
+                        ++ifLineNum;
+                        unsigned short int indentLevel = 0;
+
+                        for (int i = 0; lines[ifLineNum][i] == ' ' && i < lines[_line].size(); ++i) {
+                            ++indentLevel;
+                        }
+
+                        std::string parseLine = "";
+                        std::string emptyCheck = "";
+
+                        for (int i = indentLevel; i < lines[ifLineNum].size(); ++i) {
+                            ifLine += lines[ifLineNum][i];
+                        }
+
+                        pauseIfRead = true;
+                    }
+                }
                 break;
         }
     }

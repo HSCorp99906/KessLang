@@ -49,6 +49,10 @@ int main(int argc, char* argv[]) {
         parseAndPrepare(line, argv[2]);
     }
 
+    for (int i = 0; i < 3; ++i) {
+        parseAndPrepare("__EMPTY__;", argv[2]);
+    }
+
     parseAndPrepare("______END______;", argv[2]);
 
     src.close();
