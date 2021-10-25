@@ -367,7 +367,7 @@ void parseAndPrepare(std::string line, std::string ed) {
                         parseCondition += line[i];
                     }
 
-                    if (!(std::regex_match(parseCondition, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1})")))) {
+                    if (!(std::regex_match(parseCondition, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
                         exit_err("ERROR: Syntax error with if statement on line: " + std::to_string(lineNum));
                     }
                 } else if (ifBlockBegin) {
@@ -1039,6 +1039,43 @@ void execute() {
                             if (intVal1 != intVal2) {
                                 ifBlock = true;
                                 isTrue = true;
+                            }
+                        } else if (std::regex_match(condition, std::regex("(\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})"))) {   // Variable compare with string. (== operator)
+                            std::string val1 = "";
+                            std::string val2 = "";
+                            std::string val2NoQuotes = "";
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z]+\\d*"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("\"{1}.*\"{1}"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            for (int i = 0; i < val2.size(); ++i) {
+                                if (val2[i] != '"') {
+                                    val2NoQuotes += val2[i];
+                                }
+                            }
+
+                            if (!(intVars.count(val1))) {
+                                if (!(stringVars.count(val1))) {
+                                    exit_err("RUNTIME ERROR: Trying to compare non-existing variable on line " + std::to_string(ifLineNum));
+                                } else {
+                                    if (val2NoQuotes == stringVars[val1]) {
+                                        ifBlock = true;
+                                        isTrue = true;
+                                    }
+                                }
+                            } else {
+                                exit_err("RUNTIME ERROR: Comparing integer with string on line " + std::to_string(ifLineNum));
                             }
                         }
                     } else if (readIfBlockCode && isTrue) {

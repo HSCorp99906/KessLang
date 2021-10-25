@@ -1,10 +1,4 @@
-if 1 < 2:
-    C_START:
-    #include <stdlib.h>
-    #include <stdio.h>
+str a = "abc";
 
-    int main() {
-        puts("Hello, World!");
-    }
-
-    C_END
+if a == "abc":
+    out("Hello, World!");
