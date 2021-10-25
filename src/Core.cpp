@@ -542,7 +542,7 @@ void execute() {
                 {
                     std::string parenContent;
                     rtToken ^ parenContent;
-                    if (std::regex_match(parenContent, std::regex("(\"[a-zA-Z0-9]+\"{1}\\s*==\\s*\"{1}[A-Za-z0-9]+\"{1}|\"[A-Za-z0-9]+\"{1}\\s*!=\\s*\"{1}[A-Za-z0-9]+\"{1}|\\d+\\s*==\\s*\\d+|\\d+\\s*!=\\s*\\d+)"))) {
+                    if (std::regex_match(parenContent, std::regex("(\"[a-zA-Z0-9]+\"{1}\\s*==\\s*\"{1}[A-Za-z0-9]+\"{1}|\"[A-Za-z0-9]+\"{1}\\s*!=\\s*\"{1}[A-Za-z0-9]+\"{1}|\\d+\\s*==\\s*\\d+|\\d+\\s*!=\\s*\\d+|\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+)"))) {
                         possibleVar = false;
                     }
                 }
@@ -615,6 +615,52 @@ void execute() {
                         }
 
                         if (val1 != val2) {
+                            std::cout << "true" << std::endl;
+                        } else {
+                            std::cout << "false" << std::endl;
+                        }
+                    } else if (std::regex_match(stdoutBuffer, std::regex("\\d+\\s*>\\s*\\d+"))) {
+                        std::string val1 = "";
+                        std::string val2 = "";
+
+                        std::smatch match;
+
+                        std::regex_search(stdoutBuffer, match, std::regex("^[a-zA-Z0-9]+"));
+
+                        for (auto i: match) {
+                            val1 += i;
+                        }
+
+                        std::regex_search(stdoutBuffer, match, std::regex("[a-zA-Z0-9]+$"));
+
+                        for (auto i: match) {
+                            val2 += i;
+                        }
+
+                        if (val1 > val2) {
+                            std::cout << "true" << std::endl;
+                        } else {
+                            std::cout << "false" << std::endl;
+                        }
+                    } else if (std::regex_match(stdoutBuffer, std::regex("\\d+\\s*<\\s*\\d+"))) {
+                        std::string val1 = "";
+                        std::string val2 = "";
+
+                        std::smatch match;
+
+                        std::regex_search(stdoutBuffer, match, std::regex("^[a-zA-Z0-9]+"));
+
+                        for (auto i: match) {
+                            val1 += i;
+                        }
+
+                        std::regex_search(stdoutBuffer, match, std::regex("[a-zA-Z0-9]+$"));
+
+                        for (auto i: match) {
+                            val2 += i;
+                        }
+
+                        if (val1 < val2) {
                             std::cout << "true" << std::endl;
                         } else {
                             std::cout << "false" << std::endl;
