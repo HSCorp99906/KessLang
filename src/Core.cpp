@@ -665,6 +665,8 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
+                    } else {
+                        std::cout << stdoutBuffer << std::endl;
                     }
                 } else {
                     rtToken ^ varKey;
