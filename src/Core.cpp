@@ -466,7 +466,7 @@ void parseAndPrepare(std::string line, std::string ed) {
         exit_err("ERROR: Lingering quotes on line: " + std::to_string(lineNum));
     }
 
-    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT) {
+    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock)) {
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
 
@@ -1056,10 +1056,6 @@ void execute() {
 
                         for (int i = indentLevel; i < lines[ifLineNum].size(); ++i) {
                             ifLine += lines[ifLineNum][i];
-                        }
-
-                        if (ifLine[ifLine.size() - 1] != ';') {
-                            exit_err("ERROR: Missing semicolen on line: " + std::to_string(ifLineNum + 1));
                         }
 
                         pauseIfRead = true;
