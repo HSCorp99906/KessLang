@@ -940,7 +940,7 @@ void execute() {
 
                             std::stringstream ss(val1);
                             ss >> intVal1;
-                            ss.str(val2);
+                            ss = std::stringstream(val2);
                             ss >> intVal2;
 
                             if (intVal1 > intVal2) {
