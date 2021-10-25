@@ -1061,7 +1061,7 @@ void execute() {
 
                         pauseIfRead = true;
 
-                        if (std::regex_match(ifLine, std::regex("(out\\(\\w+\\d+\\);|int\\s*\\w+\\d*\\s*=\\s*\\d*;|str\\s*\\w+\\d*\\s*=\\s*\"{1}[A-Z0-9a-z]+\"{1});"))) {
+                        if (std::regex_match(ifLine, std::regex("(out\\(\\w+\\d+\\);|int\\s*\\w+\\d*\\s*=\\s*\\d*;|str\\s*\\w+\\d*\\s*=\\s*\"{1}[A-Z0-9a-z]+\"{1};)"))) {
                             exit_err("RUNTIME ERROR: Using unsupported feature with if statements on line: " + std::to_string(ifLineNum));
                         }
                     }
