@@ -977,6 +977,66 @@ void execute() {
                                 ifBlock = true;
                                 isTrue = true;
                             }
+                        } else if (std::regex_match(condition, std::regex("[a-zA-Z0-9]\\s*==\\s*[a-zA-Z0-9]"))) {
+                            std::string val1 = "";
+                            std::string val2 = "";
+
+                            int intVal1;
+                            int intVal2;
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("^[a-zA-Z0-9]+"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z0-9]+$"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            std::stringstream ss(val1);
+                            ss >> intVal1;
+                            ss = std::stringstream(val2);
+                            ss >> intVal2;
+
+                            if (intVal1 == intVal2) {
+                                ifBlock = true;
+                                isTrue = true;
+                            }
+                        } else if (std::regex_match(condition, std::regex("[a-zA-Z0-9]\\s*!=\\s*[a-zA-Z0-9]"))) {
+                            std::string val1 = "";
+                            std::string val2 = "";
+
+                            int intVal1;
+                            int intVal2;
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("^[a-zA-Z0-9]+"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z0-9]+$"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            std::stringstream ss(val1);
+                            ss >> intVal1;
+                            ss = std::stringstream(val2);
+                            ss >> intVal2;
+
+                            if (intVal1 != intVal2) {
+                                ifBlock = true;
+                                isTrue = true;
+                            }
                         }
                     } else if (readIfBlockCode && isTrue) {
                         ifLine = "";
