@@ -1,4 +1,7 @@
-str a = "abc";
+str a = in("Enter name: ");
 
-if a == "abc":
-    out("Hello, World!");
+if a == "Ian":
+    out("Hi, Ian!");
+    stop
+
+out("I do not know you.");
