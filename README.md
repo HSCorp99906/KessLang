@@ -104,6 +104,7 @@ if 4 > 1:
 
 if 1 != 2:
     out("1 does not equal 2.")
+```
 
 
 ## Questions?
