@@ -977,7 +977,7 @@ void execute() {
                                 ifBlock = true;
                                 isTrue = true;
                             }
-                        } else if (std::regex_match(condition, std::regex("[a-zA-Z0-9]\\s*==\\s*[a-zA-Z0-9]"))) {
+                        } else if (std::regex_match(condition, std::regex("[0-9]+\\s*==\\s*[0-9]+"))) {
                             std::string val1 = "";
                             std::string val2 = "";
 
@@ -1007,7 +1007,7 @@ void execute() {
                                 ifBlock = true;
                                 isTrue = true;
                             }
-                        } else if (std::regex_match(condition, std::regex("[a-zA-Z0-9]\\s*!=\\s*[a-zA-Z0-9]"))) {
+                        } else if (std::regex_match(condition, std::regex("[0-9]+\\s*!=\\s*[0-9]+"))) {
                             std::string val1 = "";
                             std::string val2 = "";
 
