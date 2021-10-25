@@ -634,6 +634,8 @@ void execute() {
 
                 if (!(possibleVar)) {
                     rtToken ^ stdoutBuffer;
+                    std::string parsed = "";
+
                     if (std::regex_match(stdoutBuffer, std::regex("[a-zA-Z0-9]\\s*==\\s*[a-zA-Z0-9]"))) {
                         std::string val1 = "";
                         std::string val2 = "";
