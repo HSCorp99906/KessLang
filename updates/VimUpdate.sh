@@ -47,6 +47,7 @@ echo "highlight INTEGER ctermfg=magenta" >> ~/.vimrc
 echo "highlight FILE_READ_OUT ctermfg=darkmagenta" >> ~/.vimrc
 echo "highlight c_start ctermfg=magenta" >> ~/.vimrc
 echo "highlight c_end ctermfg=magenta" >> ~/.vimrc
+echo "highlight IF_STATEMENT ctermfg=yellow" >> ~/.vimrc
 
 vimfile=$(find ~/.vim | head -n 1)
 
