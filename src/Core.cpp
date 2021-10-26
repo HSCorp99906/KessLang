@@ -33,6 +33,7 @@ enum BuiltIn : unsigned int {
     IF_STATEMENT = 13,
     IN = 14,
     STOP = 15,
+    STRING_ADDON = 16
 };
 
 
@@ -116,6 +117,9 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (parse == "stop") {
             builtInUsed = STOP;
+            break;
+        } else if (std::regex_match(parse, std::regex("([a-zA-Z]+\\d*\\s*+\\+=\\s*\"{1}[^\"]+\";|[a-zA-Z]+\\d*\\s*+\\+=\\s*\[A-Za-z0-9];)"))) {
+            builtInUsed = STRING_ADDON;
             break;
         }
     }
@@ -435,7 +439,20 @@ void parseAndPrepare(std::string line, std::string ed) {
                     }
 
                     if (error) {
-                        exit_err("ERROR: No quotes on line: " + std::to_string(lineNum));
+                        std::string plusEq = "";
+
+                        std::smatch m;
+
+                        std::regex_search(line, m, std::regex("\\+="));
+
+                        for (auto i: m) {
+                            plusEq = i;
+                            break;
+                        }
+
+                        if (plusEq != "+=") {
+                            exit_err("ERROR: No quotes on line: " + std::to_string(lineNum));
+                        }
                     }
                 }
             }
@@ -777,11 +794,53 @@ void execute() {
                 } else {
                     rtToken ^ varKey;
                     if (!(intVars.count(varKey))) {
-                        if (!(stringVars.count(varKey))) {
+                        if (!(stringVars.count(varKey)) && !(std::regex_match(line, std::regex("(out\\([a-zA-Z0-9]+\\s*\\+\\s*[a-zA-Z0-9]+\\);)")))) {
                             exit_err("RUNTIME ERROR: Trying to output non-existing var on line: " + std::to_string(internalLineNum));
+                        } else if (std::regex_match(line, std::regex("(out\\([a-zA-Z0-9]+\\s*\\+\\s*[a-zA-Z0-9]+\\);)"))) {
+                            std::string var1;
+                            std::string var2;
+
+                            std::string cleanedVar1 = "";
+                            std::string cleanedVar2 = "";
+
+
+                            std::smatch m;
+
+                            std::regex_search(line, m, std::regex("[a-zA-Z0-9]+\\s+"));
+
+                            for (auto i: m) {
+                                var1 = i;
+                                break;
+                            }
+
+                            std::regex_search(line, m, std::regex("\\s[a-z]+"));
+
+                            for (auto i: m) {
+                                var2 = i;
+                                break;
+                            }
+
+                            for (int i = 0; i < var1.size(); ++i) {
+                                if (var1[i] != ' ') {
+                                    cleanedVar1 += var1[i];
+                                }
+                            }
+
+                            for (int i = 0; i < var2.size(); ++i) {
+                                if (var2[i] != ' ') {
+                                    cleanedVar2 += var2[i];
+                                }
+                            }
+
+                            if (!(stringVars.count(cleanedVar1)) || !(stringVars.count(cleanedVar2))) {
+                                exit_err("Trying to concatenate non-existing var(s) on line: " + std::to_string(internalLineNum));
+                            } else {
+                                std::cout << stringVars[cleanedVar1] << stringVars[cleanedVar2] << std::endl;
+                            }
                         } else {
                             std::cout << stringVars[varKey] << std::endl;
                         }
+
                     } else {
                         std::cout << intVars[varKey] << std::endl;
                     }
@@ -975,6 +1034,58 @@ void execute() {
                 break;
             case STOP:
                 exit(0);
+                break;
+            case STRING_ADDON:
+                {
+                    std::string toBeParsed;
+                    std::string parsed = "";
+                    std::string key;
+                    bool quote = false;
+
+                    std::smatch m;
+
+                    std::regex_search(line, m, std::regex("(\"[^\"]+\"|\\s+[A-Za-z]+)"));
+
+                    for (auto i: m) {
+                        toBeParsed = i;
+                        break;
+                    }
+
+                    std::regex_search(line, m, std::regex("^[a-zA-Z0-9]+"));
+
+                    for (auto i: m) {
+                        key = i;
+                        break;
+                    }
+
+                    for (int i = 0; i < toBeParsed.size() && toBeParsed[i] != ';'; ++i) {
+                        if (toBeParsed[i] == '"') {
+                            quote = true;
+                        }
+
+                        if (toBeParsed[i] != '"' && toBeParsed[i] != ' ') {
+                            parsed += toBeParsed[i];
+                        }
+                    }
+
+                    if (quote) {
+                        if (!(stringVars.count(key))) {
+                            exit_err("RUNTIME ERROR: Trying to add-on to non-existing string var on line: " + std::to_string(internalLineNum));
+                        } else {
+                            stringVars[key] = stringVars[key] + parsed;
+                        }
+                    } else if (!(quote) && stringVars.count(parsed)) {
+                        if (!(stringVars.count(key))) {
+                            exit_err("RUNTIME ERROR: Trying to add-on to non-existing string var on line: " + std::to_string(internalLineNum));
+                        } else {
+                            stringVars[key] = stringVars[key] + stringVars[parsed];
+                        }
+                    } else {
+                        exit_err("RUNTIME ERROR LINE " + std::to_string(internalLineNum) + ": No variable named " + parsed);
+                    }
+                }
+
+                break;
             case IF_STATEMENT:
                 {
                     if (!(readIfBlockCode)) {
