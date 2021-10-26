@@ -1030,7 +1030,7 @@ void execute() {
                             quote = true;
                         }
 
-                        if (toBeParsed[i] != '"' && toBeParsed[i] != ' ') {
+                        if (toBeParsed[i] != '"') {
                             parsed += toBeParsed[i];
                         }
                     }
