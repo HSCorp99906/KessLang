@@ -1,7 +1,3 @@
-## Discontinued due to major bugs.
-## Do not worry though, we are working on a new KessLang!
-
-
 # MAKE SURE TO PUT KESSLANG IN YOUR HOME DIRECTORY!
 # WORKS ONLY ON LINUX CURRENTLY.
 
