@@ -12,6 +12,7 @@ std::map<unsigned int, std::string> outs;
 std::vector<std::string> lines;
 std::ofstream outFile;
 std::vector<std::string> cb_files;
+std::vector<std::string> conditions;
 
 unsigned int c_blocks = 0;
 
@@ -33,7 +34,9 @@ enum BuiltIn : unsigned int {
     IF_STATEMENT = 13,
     IN = 14,
     STOP = 15,
-    STRING_ADDON = 16
+    STRING_ADDON = 16,
+    FUNCTION_DEF = 17,
+    FUNCTION_CALL = 18
 };
 
 
@@ -113,6 +116,7 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             builtInUsed == NEWLINE;
             break;
         } else if (parse == "if") {
+            conditions.push_back(this -> line);
             builtInUsed = IF_STATEMENT;
             break;
         } else if (parse == "stop") {
@@ -120,6 +124,12 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (std::regex_match(parse, std::regex("([a-zA-Z]+\\d*\\s*+\\+=\\s*\"{1}[^\"]+\";|[a-zA-Z]+\\d*\\s*+\\+=\\s*\[A-Za-z0-9];)"))) {
             builtInUsed = STRING_ADDON;
+            break;
+        } else if (std::regex_match(parse, std::regex("func\\s+[a-zA-Z]+[0-9a-zA-Z]*\\(\\)\\:"))) {
+            builtInUsed = FUNCTION_DEF;
+            break;
+        } else if (std::regex_match(parse, std::regex("[a-zA-Z]+[0-9A-Za-z]*=>\\(\\);?"))) {
+            builtInUsed = FUNCTION_CALL;
             break;
         }
     }
@@ -186,6 +196,11 @@ void parseAndPrepare(std::string line, std::string ed) {
     static bool ifBlock = false;
     static bool ifBlockBegin = false;
     static unsigned short int indentLevel = 0;
+    static unsigned int conditionIndex = 0;
+
+    static bool functionActive = false;
+    static bool functionBegin = false;
+    static unsigned short int fIndentLevel = 0;
 
     if (c_def && !(c_def_end)) {
         builtInUsed = C_CODE;
@@ -227,6 +242,30 @@ void parseAndPrepare(std::string line, std::string ed) {
                 possibleVar = false;
             }
 
+            break;
+        case FUNCTION_DEF:
+            if (!(functionActive)) {
+                functionActive = true;
+                functionBegin = true;
+            } else if (functionActive) {
+                if (functionBegin) {
+                    functionBegin = false;
+
+                    for (int i = 0; line[i] == ' ' && i < line.size() - 1; ++i) {
+                        ++fIndentLevel;
+                    }
+                } else {
+                    unsigned short int matchIndent = 0;
+
+                    for (int i = 0; line[i] == ' ' && i < line.size() - 1; ++i) {
+                        ++matchIndent;
+                    }
+
+                    if (matchIndent < 3 || matchIndent != fIndentLevel) {
+                        exit_err("ERROR: Indent error on line: " + std::to_string(lineNum));
+                    }
+                }
+            }
             break;
         case BACKWARD:
             for (int i = 0; i < line.size(); ++i) {
@@ -372,8 +411,8 @@ void parseAndPrepare(std::string line, std::string ed) {
 
                     std::string parseCondition = "";
 
-                    for (int i = 3; i < line.size() - 1; ++i) {
-                        parseCondition += line[i];
+                    for (int i = 3; i < conditions[conditionIndex].size() - 1; ++i) {
+                        parseCondition += conditions[conditionIndex][i];
                     }
 
                     if (!(std::regex_match(parseCondition, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
@@ -382,7 +421,7 @@ void parseAndPrepare(std::string line, std::string ed) {
                             parseCondition += lines[lineNum - 1][i];
                         }
 
-                        if (!(std::regex_match(parseLine, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
+                        if (!(std::regex_match(parseCondition, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
                             exit_err("ERROR: Syntax error with if statement on line: " + std::to_string(lineNum));
                         }
                     }
@@ -413,6 +452,8 @@ void parseAndPrepare(std::string line, std::string ed) {
                     } else {
                         ifBlockBegin = false;
                         ifBlock = false;
+                        indentLevel = 0;
+                        ++conditionIndex;
                     }
                 }
             }
@@ -515,7 +556,7 @@ void parseAndPrepare(std::string line, std::string ed) {
         exit_err("ERROR: Lingering quotes on line: " + std::to_string(lineNum));
     }
 
-    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock)) {
+    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock) && !(functionActive)) {
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
 
@@ -547,6 +588,7 @@ void parseAndPrepare(std::string line, std::string ed) {
 void execute() {
     std::map<std::string, short int> intVars;
     std::map<std::string, std::string> stringVars;
+    std::map<std::string, std::vector<std::string>> functions;
 
     Token rtToken;
     unsigned int internalLineNum = 0;
@@ -560,6 +602,14 @@ void execute() {
     std::string ifLine;
     bool isTrue = false;
     unsigned int ifLineNum = 0;
+    unsigned int conditionIndex = 0;
+
+    bool functionActive = false;
+    bool functionBegin = false;
+    std::string lastFunctionKey = "";
+    std::vector<std::string>::iterator functionLineIndex;
+    bool functionExec = false;
+    std::string curKey;
 
     for (int i = 0; i < lines.size(); ++i) {
         unsigned int biu;  // Built in used.
@@ -643,6 +693,20 @@ void execute() {
             pauseIfRead = false;
             rtToken << ifLine;
             rtToken.setBuiltIn(builtInUsed);
+        }
+
+        if (functionActive && line[0] != ' ') {
+            functionBegin = false;
+            functionActive = false;
+        }
+
+        if (functionExec) {
+            if (functionLineIndex != functions[curKey].end()) {
+                rtToken << *functionLineIndex;
+                rtToken.setBuiltIn(builtInUsed);
+                line = *functionLineIndex;
+                ++functionLineIndex;
+            }
         }
 
         switch (builtInUsed) {
@@ -960,7 +1024,6 @@ void execute() {
                 }
 
                 break;
-
             case STRING_DEF:
                 {
                     std::string varKey = "";
@@ -1053,6 +1116,69 @@ void execute() {
                 }
 
                 break;
+            case FUNCTION_DEF:
+                {
+
+                    if (!(functionBegin) && !(functionActive)) {
+                        functionBegin = true;
+
+                        std::smatch m;
+
+                        std::regex_search(line, m, std::regex("\\s+[A-Za-z]+[0-9A-Za-z]*"));
+
+                        for (auto i: m) {
+                            lastFunctionKey = i;
+                            break;
+                        }
+
+                        lastFunctionKey = std::regex_replace(lastFunctionKey, std::regex("\\s"), "");
+
+                    } else {
+                        unsigned short int indentLevel = 0;
+
+                        for (int i = 0; line[i] == ' ' && i < line.size(); ++i) {
+                            ++indentLevel;
+                        }
+
+                        functionActive = true;
+
+                        if (functionActive) {
+                            std::string curLine = "";
+
+                            for (int i = 0; i < line.size(); ++i) {
+                                if (line[i] != ' ') {
+                                    curLine += line[i];
+                                }
+                            }
+
+                            functions[lastFunctionKey].push_back(curLine);
+                        }
+                    }
+
+                }
+
+                break;
+            case FUNCTION_CALL:
+                {
+                    curKey = "";
+
+                    if (line[line.size() - 1] != ';') {
+                        exit_err("RUNTIME ERROR: Missing semicolen on line: " + std::to_string(internalLineNum));
+                    }
+
+                    for (int i = 0; i < line.size() && line[i] != '='; ++i) {
+                        curKey += line[i];
+                    }
+
+                    if (!(functions.count(curKey))) {
+                        exit_err("RUNTIME ERROR LINE " + std::to_string(internalLineNum) + ": function \"" + curKey + "\" does not exist.");
+                    } else {
+                        functionExec = true;
+                        functionLineIndex = functions[curKey].begin();
+                    }
+                }
+
+                break;
             case STOP:
                 exit(0);
                 break;
@@ -1118,8 +1244,10 @@ void execute() {
 
                         std::string condition = "";
 
-                        for (int i = 3; i < lines[_line].size() - 1; ++i) {
-                            condition += lines[_line][i];
+                        ++conditionIndex;
+
+                        for (int i = 3; i < conditions[conditionIndex].size() - 1; ++i) {
+                            condition += conditions[conditionIndex][i];
                         }
 
                         if (std::regex_match(condition, std::regex("\\d+\\s*>\\s*\\d+"))) {
@@ -1284,11 +1412,14 @@ void execute() {
                                     exit_err("RUNTIME ERROR: Trying to compare non-existing variable on line " + std::to_string(ifLineNum));
                                 } else {
                                     if (val2NoQuotes == stringVars[val1]) {
-                                        ifBlock = true;
+                                        ifBlock = false;
                                         isTrue = true;
                                     } else {
+                                        std::cout << "VAL2: " << val2NoQuotes << std::endl;
+                                        std::cout << "VAR: " << stringVars[val1] << std::endl;
                                         ifBlock = false;
                                         pauseIfRead = false;
+                                        readIfBlockCode = false;
                                     }
                                 }
                             } else {
