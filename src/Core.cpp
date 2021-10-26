@@ -261,8 +261,11 @@ void parseAndPrepare(std::string line, std::string ed) {
                         ++matchIndent;
                     }
 
-                    if (matchIndent < 3 || matchIndent != fIndentLevel) {
+                    if (matchIndent != fIndentLevel && matchIndent > 0) {
                         exit_err("ERROR: Indent error on line: " + std::to_string(lineNum));
+                    } else if (matchIndent == 0) {
+                        functionBegin = false;
+                        functionActive = false;
                     }
                 }
             }
@@ -1420,8 +1423,6 @@ void execute() {
                                         ifBlock = false;
                                         isTrue = true;
                                     } else {
-                                        std::cout << "VAL2: " << val2NoQuotes << std::endl;
-                                        std::cout << "VAR: " << stringVars[val1] << std::endl;
                                         ifBlock = false;
                                         pauseIfRead = false;
                                         readIfBlockCode = false;
