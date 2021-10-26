@@ -642,17 +642,17 @@ void execute() {
                 } else {
                     bool quote = false;
 
-                    for (int i = 0; i < lines[_line].size(); ++i) {
-                        if (lines[_line][i] == '"') {
+                    for (int i = 0; i < line.size(); ++i) {
+                        if (line[i] == '"') {
                             quote = true;
                             break;
                         }
+                    }
 
-                        if (quote) {
-                            possibleVar = true;
-                        } else {
-                            possibleVar = false;
-                        }
+                    if (quote) {
+                        possibleVar = false;
+                    } else {
+                        possibleVar = true;
                     }
 
                     pauseIfRead = false;
@@ -789,6 +789,7 @@ void execute() {
                             std::cout << "false" << std::endl;
                         }
                     } else {
+                        std::cout << line << std::endl;
                         std::cout << stdoutBuffer << std::endl;
                     }
                 } else {
@@ -1130,6 +1131,9 @@ void execute() {
                             if (intVal1 > intVal2) {
                                 ifBlock = true;
                                 isTrue = true;
+                            } else {
+                                ifBlock = false;
+                                pauseIfRead = false;
                             }
                         } else if (std::regex_match(condition, std::regex("\\d+\\s*<\\s*\\d+"))) {
                             std::string val1 = "";
@@ -1160,6 +1164,9 @@ void execute() {
                             if (intVal1 < intVal2) {
                                 ifBlock = true;
                                 isTrue = true;
+                            } else {
+                                ifBlock = false;
+                                pauseIfRead = false;
                             }
                         } else if (std::regex_match(condition, std::regex("[0-9]+\\s*==\\s*[0-9]+"))) {
                             std::string val1 = "";
@@ -1190,6 +1197,9 @@ void execute() {
                             if (intVal1 == intVal2) {
                                 ifBlock = true;
                                 isTrue = true;
+                            } else {
+                                ifBlock = false;
+                                pauseIfRead = false;
                             }
                         } else if (std::regex_match(condition, std::regex("[0-9]+\\s*!=\\s*[0-9]+"))) {
                             std::string val1 = "";
@@ -1220,6 +1230,9 @@ void execute() {
                             if (intVal1 != intVal2) {
                                 ifBlock = true;
                                 isTrue = true;
+                            } else {
+                                ifBlock = false;
+                                pauseIfRead = false;
                             }
                         } else if (std::regex_match(condition, std::regex("(\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})"))) {   // Variable compare with string. (== operator)
                             std::string val1 = "";
@@ -1253,6 +1266,9 @@ void execute() {
                                     if (val2NoQuotes == stringVars[val1]) {
                                         ifBlock = true;
                                         isTrue = true;
+                                    } else {
+                                        ifBlock = false;
+                                        pauseIfRead = false;
                                     }
                                 }
                             } else {
