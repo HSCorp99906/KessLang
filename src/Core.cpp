@@ -29,7 +29,11 @@ enum BuiltIn : unsigned int {
     STRING_DEF = 9,
     C_CODE = 10,
     END = 11,
-    NEWLINE = 12
+    NEWLINE = 12,
+    IF_STATEMENT = 13,
+    IN = 14,
+    STOP = 15,
+    STRING_ADDON = 16
 };
 
 
@@ -108,6 +112,15 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (parse == "\n") {
             builtInUsed == NEWLINE;
             break;
+        } else if (parse == "if") {
+            builtInUsed = IF_STATEMENT;
+            break;
+        } else if (parse == "stop") {
+            builtInUsed = STOP;
+            break;
+        } else if (std::regex_match(parse, std::regex("([a-zA-Z]+\\d*\\s*+\\+=\\s*\"{1}[^\"]+\";|[a-zA-Z]+\\d*\\s*+\\+=\\s*\[A-Za-z0-9];)"))) {
+            builtInUsed = STRING_ADDON;
+            break;
         }
     }
 }
@@ -169,6 +182,10 @@ void parseAndPrepare(std::string line, std::string ed) {
     static bool c_def = false;
     static bool c_def_end = false;
     static std::string current_c_block = "";
+
+    static bool ifBlock = false;
+    static bool ifBlockBegin = false;
+    static unsigned short int indentLevel = 0;
 
     if (c_def && !(c_def_end)) {
         builtInUsed = C_CODE;
@@ -347,6 +364,60 @@ void parseAndPrepare(std::string line, std::string ed) {
             }
 
             break;
+        case IF_STATEMENT:
+            {
+                if (!(ifBlock)) {
+                    ifBlock = true;
+                    ifBlockBegin = true;
+
+                    std::string parseCondition = "";
+
+                    for (int i = 3; i < line.size() - 1; ++i) {
+                        parseCondition += line[i];
+                    }
+
+                    if (!(std::regex_match(parseCondition, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
+                        parseCondition = "";
+                        for (int i = 3; i < lines[lineNum - 1].size() - 1; ++i) {
+                            parseCondition += lines[lineNum - 1][i];
+                        }
+
+                        if (!(std::regex_match(parseLine, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
+                            exit_err("ERROR: Syntax error with if statement on line: " + std::to_string(lineNum));
+                        }
+                    }
+                } else if (ifBlockBegin) {
+                    ifBlockBegin = false;
+                    for (int i = 0; i < line.size() && line[i] == ' '; ++i) {
+                        ++indentLevel;
+                    }
+
+                    if (line[line.size() - 1] != ';') {
+                        exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
+                    }
+                } else {
+                    if (line[0] == ' ') {
+                        unsigned short int indentLevelMatch = 0;
+
+                        for (int i = 0; i < line.size() && line[i] == ' '; ++i) {
+                            ++indentLevelMatch;
+                        }
+
+                        if (indentLevelMatch != indentLevel) {
+                            exit_err("ERROR: Indent error on line: " + std::to_string(lineNum));
+                        }
+
+                        if (line[line.size() - 1] != ';') {
+                            exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
+                        }
+                    } else {
+                        ifBlockBegin = false;
+                        ifBlock = false;
+                    }
+                }
+            }
+
+            break;
         case STRING_DEF:
             {
                 bool defined = false;
@@ -371,7 +442,32 @@ void parseAndPrepare(std::string line, std::string ed) {
                 if (quotes > 2) {
                     exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
                 } else if (quotes == 0) {
-                    exit_err("ERROR: No quotes on line: " + std::to_string(lineNum));
+                    std::string parse = "";
+                    bool error = true;
+
+                    for (int i = 8; i < line.size() - 1; ++i) {
+                        parse += line[i];
+                        if (parse == "in") {
+                            error = false;
+                        }
+                    }
+
+                    if (error) {
+                        std::string plusEq = "";
+
+                        std::smatch m;
+
+                        std::regex_search(line, m, std::regex("\\+="));
+
+                        for (auto i: m) {
+                            plusEq = i;
+                            break;
+                        }
+
+                        if (plusEq != "+=") {
+                            exit_err("ERROR: No quotes on line: " + std::to_string(lineNum));
+                        }
+                    }
                 }
             }
 
@@ -419,7 +515,7 @@ void parseAndPrepare(std::string line, std::string ed) {
         exit_err("ERROR: Lingering quotes on line: " + std::to_string(lineNum));
     }
 
-    if (line[line.size() - 1] != ';' && !(c_def)) {
+    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock)) {
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
 
@@ -458,6 +554,13 @@ void execute() {
     bool canPrint = true;
     bool c_block = false;
 
+    bool readIfBlockCode = false;
+    bool ifBlock = false;
+    bool pauseIfRead = false;
+    std::string ifLine;
+    bool isTrue = false;
+    unsigned int ifLineNum = 0;
+
     for (int i = 0; i < lines.size(); ++i) {
         unsigned int biu;  // Built in used.
         rtToken << lines[i];
@@ -494,6 +597,8 @@ void execute() {
         }
     }
 
+    unsigned int builtInUsed;
+
     std::vector<std::string> to_ignore;  // Lines to ignore.
     for (int _line = 0; _line < lines.size(); ++_line) {
         canPrintVar = true;
@@ -506,7 +611,6 @@ void execute() {
         int varVal;
 
         std::string line = lines[_line];
-        unsigned int builtInUsed;
 
         rtToken << line;
         rtToken.setBuiltIn(builtInUsed);
@@ -531,12 +635,40 @@ void execute() {
 
         bool ignore = false;
 
+        if (ifBlock && !(pauseIfRead)) {
+            builtInUsed = IF_STATEMENT;
+        }
+
+        if (pauseIfRead) {
+            pauseIfRead = false;
+            rtToken << ifLine;
+            rtToken.setBuiltIn(builtInUsed);
+        }
+
         switch (builtInUsed) {
             case OUT:
-                if (lines[_line][4] == '"') {
-                    possibleVar = false;
+                if (!(readIfBlockCode)) {
+                    if (lines[_line][4] == '"') {
+                        possibleVar = false;
+                    } else {
+                        possibleVar = true;
+                    }
                 } else {
-                    possibleVar = true;
+                    bool quote = false;
+
+                    for (int i = 0; i < line.size(); ++i) {
+                        if (line[i] == '"') {
+                            quote = true;
+                            break;
+                        }
+                    }
+
+                    if (quote) {
+                        possibleVar = false;
+                    }
+
+                    pauseIfRead = false;
+                    ifBlock = true;
                 }
 
                 {
@@ -547,8 +679,17 @@ void execute() {
                     }
                 }
 
+                if (std::regex_match(line, std::regex("out\\([a-zA-Z0-9]+\\);"))) {
+                    possibleVar = true;
+                } else {
+                    possibleVar = false;
+                }
+
                 if (!(possibleVar)) {
                     rtToken ^ stdoutBuffer;
+                    std::string parsed = "";
+
+
                     if (std::regex_match(stdoutBuffer, std::regex("[a-zA-Z0-9]\\s*==\\s*[a-zA-Z0-9]"))) {
                         std::string val1 = "";
                         std::string val2 = "";
@@ -584,7 +725,7 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
-                    } else if (std::regex_match(stdoutBuffer, std::regex("[a-zA-Z0-9]\\s*!=\\s*[a-zA-Z0-9]"))) {
+                    } else if (std::regex_match(lines[_line], std::regex("out\\(\"{1}[a-zA-Z!@#$%^&*\\-<>,.';:\\[\\]\\s]+\"{1}\\s*!=\\s*\"{1}[a-zA-Z!@#$%^&*\\-<>,.';:\\[\\]\\s]+\"\\)"))) {
                         std::string val1 = "";
                         std::string val2 = "";
 
@@ -619,7 +760,7 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
-                    } else if (std::regex_match(stdoutBuffer, std::regex("\\d+\\s*>\\s*\\d+"))) {
+                    } else if (std::regex_match(lines[_line], std::regex("out\\(\\d+\\s*>\\s*\\d+\\);"))) {
                         std::string val1 = "";
                         std::string val2 = "";
 
@@ -642,7 +783,7 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
-                    } else if (std::regex_match(stdoutBuffer, std::regex("\\d+\\s*<\\s*\\d+"))) {
+                    } else if (std::regex_match(lines[_line], std::regex("out\\(\\d+\\s*<\\s*\\d+\\);"))) {
                         std::string val1 = "";
                         std::string val2 = "";
 
@@ -665,17 +806,62 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
+                    } else if (std::regex_match(line, std::regex("(out\\([a-zA-Z0-9]+\\s*\\+\\s*[a-zA-Z0-9]+\\);)"))) {
+                        std::string var1;
+                        std::string var2;
+
+                        std::string cleanedVar1 = "";
+                        std::string cleanedVar2 = "";
+
+
+                        std::smatch m;
+
+                        std::regex_search(line, m, std::regex("[a-zA-Z0-9]+\\s+"));
+
+                        for (auto i: m) {
+                            var1 = i;
+                            break;
+                        }
+
+                        std::regex_search(line, m, std::regex("\\s[a-z]+"));
+
+                        for (auto i: m) {
+                            var2 = i;
+                            break;
+                        }
+
+                        for (int i = 0; i < var1.size(); ++i) {
+                            if (var1[i] != ' ') {
+                                cleanedVar1 += var1[i];
+                            }
+                        }
+
+                        for (int i = 0; i < var2.size(); ++i) {
+                            if (var2[i] != ' ') {
+                                cleanedVar2 += var2[i];
+                            }
+                        }
+
+                        if (!(stringVars.count(cleanedVar1)) || !(stringVars.count(cleanedVar2))) {
+                            exit_err("Trying to concatenate non-existing var(s) on line: " + std::to_string(internalLineNum));
+                        } else {
+                            std::cout << stringVars[cleanedVar1] << stringVars[cleanedVar2] << std::endl;
+                        }
                     } else {
                         std::cout << stdoutBuffer << std::endl;
+                        possibleVar = false;
                     }
                 } else {
                     rtToken ^ varKey;
                     if (!(intVars.count(varKey))) {
                         if (!(stringVars.count(varKey))) {
+                            std::cout << line << std::endl;
+                            std::cout << varKey << std::endl;
                             exit_err("RUNTIME ERROR: Trying to output non-existing var on line: " + std::to_string(internalLineNum));
                         } else {
                             std::cout << stringVars[varKey] << std::endl;
                         }
+
                     } else {
                         std::cout << intVars[varKey] << std::endl;
                     }
@@ -779,14 +965,59 @@ void execute() {
                 {
                     std::string varKey = "";
                     std::string varVal = "";
+                    std::string inputVarVal = "";
+                    bool setVarDefault = true;
+                    bool quotes = false;
 
                     for (int i = 4; i < line.size() - 1; ++i) {
                         if (line[i] != ' ') {
                             varKey += line[i];
                         } else {
                             for (int j = i + 3; j < line.size() - 1; ++j) {
+                                if (line[j] == '"') {
+                                    quotes = true;
+                                }
+
                                 if (line[j] != '"') {
                                     varVal += line[j];
+
+                                    if (varVal == "in" && !(quotes)) {
+                                        setVarDefault = false;
+
+                                        bool openParen = false;
+                                        bool closedParen = false;
+                                        unsigned short int quoteCount = 0;
+
+                                        for (int e = j + 1; e < line.size() - 1; ++e) {
+                                            if (line[e] == '(') {
+                                                if (openParen) {
+                                                    exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                                }
+
+                                                openParen = true;
+                                            } else if (line[e] == '"') {
+                                                if (quoteCount > 2) {
+                                                    exit_err("RUNTIME ERROR: Too many quotes on line: " + std::to_string(internalLineNum));
+                                                }
+
+                                                ++quoteCount;
+                                            } else if (line[e] == ')') {
+                                                if (closedParen) {
+                                                    exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                                }
+
+                                                closedParen = true;
+                                            } else {
+                                                inputVarVal += line[e];
+                                            }
+                                        }
+
+                                        if (quoteCount == 0) {
+                                            exit_err("RUNTIME ERROR: Variables as input title is not supported currently, error on line: " + std::to_string(internalLineNum));
+                                        } else if (openParen && !(closedParen) || !(openParen) && closedParen) {
+                                            exit_err("RUNTIME ERROR: Missing parenthesis on line " + std::to_string(internalLineNum));
+                                        }
+                                    }
                                 }
                             }
 
@@ -794,7 +1025,12 @@ void execute() {
                         }
                     }
 
-                    stringVars[varKey] = varVal;
+                    if (setVarDefault) {
+                        stringVars[varKey] = varVal;
+                    } else {
+                        std::cout << inputVarVal;
+                        std::cin >> stringVars[varKey];
+                    }
                 }
 
                 break;
@@ -816,6 +1052,273 @@ void execute() {
                     }
                 }
 
+                break;
+            case STOP:
+                exit(0);
+                break;
+            case STRING_ADDON:
+                {
+                    std::string toBeParsed;
+                    std::string parsed = "";
+                    std::string key;
+                    bool quote = false;
+
+                    std::smatch m;
+
+                    std::regex_search(line, m, std::regex("(\"[^\"]+\"|\\s+[A-Za-z]+)"));
+
+                    for (auto i: m) {
+                        toBeParsed = i;
+                        break;
+                    }
+
+                    std::regex_search(line, m, std::regex("^[a-zA-Z0-9]+"));
+
+                    for (auto i: m) {
+                        key = i;
+                        break;
+                    }
+
+                    for (int i = 0; i < toBeParsed.size() && toBeParsed[i] != ';'; ++i) {
+                        if (toBeParsed[i] == '"') {
+                            quote = true;
+                        }
+
+                        if (toBeParsed[i] != '"' && toBeParsed[i] != ' ') {
+                            parsed += toBeParsed[i];
+                        }
+                    }
+
+                    if (quote) {
+                        if (!(stringVars.count(key))) {
+                            exit_err("RUNTIME ERROR: Trying to add-on to non-existing string var on line: " + std::to_string(internalLineNum));
+                        } else {
+                            stringVars[key] = stringVars[key] + parsed;
+                        }
+                    } else if (!(quote) && stringVars.count(parsed)) {
+                        if (!(stringVars.count(key))) {
+                            exit_err("RUNTIME ERROR: Trying to add-on to non-existing string var on line: " + std::to_string(internalLineNum));
+                        } else {
+                            stringVars[key] = stringVars[key] + stringVars[parsed];
+                        }
+                    } else {
+                        exit_err("RUNTIME ERROR LINE " + std::to_string(internalLineNum) + ": No variable named " + parsed);
+                    }
+                }
+
+                break;
+            case IF_STATEMENT:
+                {
+                    if (!(readIfBlockCode)) {
+                        readIfBlockCode = true;
+
+                        std::string empty_line = "";
+
+                        ifLineNum = _line;
+
+                        std::string condition = "";
+
+                        for (int i = 3; i < lines[_line].size() - 1; ++i) {
+                            condition += lines[_line][i];
+                        }
+
+                        if (std::regex_match(condition, std::regex("\\d+\\s*>\\s*\\d+"))) {
+                            std::string val1 = "";
+                            std::string val2 = "";
+
+                            int intVal1;
+                            int intVal2;
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("^[a-zA-Z0-9]+"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z0-9]+$"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            std::stringstream ss(val1);
+                            ss >> intVal1;
+                            ss = std::stringstream(val2);
+                            ss >> intVal2;
+
+                            if (intVal1 > intVal2) {
+                                ifBlock = true;
+                                isTrue = true;
+                            } else {
+                                ifBlock = false;
+                                pauseIfRead = false;
+                            }
+                        } else if (std::regex_match(condition, std::regex("\\d+\\s*<\\s*\\d+"))) {
+                            std::string val1 = "";
+                            std::string val2 = "";
+
+                            int intVal1;
+                            int intVal2;
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("^[a-zA-Z0-9]+"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z0-9]+$"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            std::stringstream ss(val1);
+                            ss >> intVal1;
+                            ss = std::stringstream(val2);
+                            ss >> intVal2;
+
+                            if (intVal1 < intVal2) {
+                                ifBlock = true;
+                                isTrue = true;
+                            } else {
+                                ifBlock = false;
+                                pauseIfRead = false;
+                            }
+                        } else if (std::regex_match(condition, std::regex("[0-9]+\\s*==\\s*[0-9]+"))) {
+                            std::string val1 = "";
+                            std::string val2 = "";
+
+                            int intVal1;
+                            int intVal2;
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("^[a-zA-Z0-9]+"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z0-9]+$"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            std::stringstream ss(val1);
+                            ss >> intVal1;
+                            ss = std::stringstream(val2);
+                            ss >> intVal2;
+
+                            if (intVal1 == intVal2) {
+                                ifBlock = true;
+                                isTrue = true;
+                            } else {
+                                ifBlock = false;
+                                pauseIfRead = false;
+                            }
+                        } else if (std::regex_match(condition, std::regex("[0-9]+\\s*!=\\s*[0-9]+"))) {
+                            std::string val1 = "";
+                            std::string val2 = "";
+
+                            int intVal1;
+                            int intVal2;
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("^[a-zA-Z0-9]+"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z0-9]+$"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            std::stringstream ss(val1);
+                            ss >> intVal1;
+                            ss = std::stringstream(val2);
+                            ss >> intVal2;
+
+                            if (intVal1 != intVal2) {
+                                ifBlock = true;
+                                isTrue = true;
+                            } else {
+                                ifBlock = false;
+                                pauseIfRead = false;
+                            }
+                        } else if (std::regex_match(condition, std::regex("(\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})"))) {   // Variable compare with string. (== operator)
+                            std::string val1 = "";
+                            std::string val2 = "";
+                            std::string val2NoQuotes = "";
+
+                            std::smatch match;
+
+                            std::regex_search(condition, match, std::regex("[a-zA-Z]+\\d*"));
+
+                            for (auto i: match) {
+                                val1 += i;
+                            }
+
+                            std::regex_search(condition, match, std::regex("\"{1}.*\"{1}"));
+
+                            for (auto i: match) {
+                                val2 += i;
+                            }
+
+                            for (int i = 0; i < val2.size(); ++i) {
+                                if (val2[i] != '"') {
+                                    val2NoQuotes += val2[i];
+                                }
+                            }
+
+                            if (!(intVars.count(val1))) {
+                                if (!(stringVars.count(val1))) {
+                                    exit_err("RUNTIME ERROR: Trying to compare non-existing variable on line " + std::to_string(ifLineNum));
+                                } else {
+                                    if (val2NoQuotes == stringVars[val1]) {
+                                        ifBlock = true;
+                                        isTrue = true;
+                                    } else {
+                                        ifBlock = false;
+                                        pauseIfRead = false;
+                                    }
+                                }
+                            } else {
+                                exit_err("RUNTIME ERROR: Comparing integer with string on line " + std::to_string(ifLineNum));
+                            }
+                        }
+                    } else if (readIfBlockCode && isTrue) {
+                        ifLine = "";
+
+                        ++ifLineNum;
+                        unsigned short int indentLevel = 0;
+
+                        for (int i = 0; lines[ifLineNum][i] == ' ' && i < lines[_line].size(); ++i) {
+                            ++indentLevel;
+                        }
+
+                        std::string parseLine = "";
+                        std::string emptyCheck = "";
+
+                        for (int i = indentLevel; i < lines[ifLineNum].size(); ++i) {
+                            ifLine += lines[ifLineNum][i];
+                        }
+
+                        pauseIfRead = true;
+
+                        if (std::regex_match(ifLine, std::regex("(out\\(\\w+\\d+\\);|int\\s*\\w+\\d*\\s*=\\s*\\d*;|str\\s*\\w+\\d*\\s*=\\s*\"{1}[A-Z0-9a-z]+\"{1};)"))) {
+                            exit_err("RUNTIME ERROR: Using unsupported feature with if statements on line: " + std::to_string(ifLineNum));
+                        }
+                    }
+                }
                 break;
         }
     }
