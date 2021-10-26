@@ -1,6 +1,6 @@
-str a = in("Enter name: ");
+str name = in("Enter name: ");
 
-if a == "Ian":
+if name == "Ian":
     out("Hi, Ian!");
     stop
 
