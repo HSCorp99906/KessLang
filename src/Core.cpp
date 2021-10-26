@@ -789,7 +789,6 @@ void execute() {
                             std::cout << "false" << std::endl;
                         }
                     } else {
-                        std::cout << line << std::endl;
                         std::cout << stdoutBuffer << std::endl;
                     }
                 } else {
