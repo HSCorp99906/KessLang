@@ -1144,9 +1144,14 @@ void execute() {
 
                         if (functionActive) {
                             std::string curLine = "";
+                            bool stopSpaceCheck = false;
 
                             for (int i = 0; i < line.size(); ++i) {
                                 if (line[i] != ' ') {
+                                    stopSpaceCheck = true;
+                                }
+
+                                if (stopSpaceCheck) {
                                     curLine += line[i];
                                 }
                             }
