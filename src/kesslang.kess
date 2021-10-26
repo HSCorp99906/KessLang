@@ -1,7 +1,1 @@
-str name = in("Enter name: ");
 
-if name == "Ian":
-    out("Hi, Ian!");
-    stop
-
-out("I do not know you.");
