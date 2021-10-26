@@ -651,8 +651,6 @@ void execute() {
 
                     if (quote) {
                         possibleVar = false;
-                    } else {
-                        possibleVar = true;
                     }
 
                     pauseIfRead = false;
@@ -665,6 +663,12 @@ void execute() {
                     if (std::regex_match(parenContent, std::regex("(\"[a-zA-Z0-9]+\"{1}\\s*==\\s*\"{1}[A-Za-z0-9]+\"{1}|\"[A-Za-z0-9]+\"{1}\\s*!=\\s*\"{1}[A-Za-z0-9]+\"{1}|\\d+\\s*==\\s*\\d+|\\d+\\s*!=\\s*\\d+|\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+)"))) {
                         possibleVar = false;
                     }
+                }
+
+                if (std::regex_match(line, std::regex("out\\([a-zA-Z0-9]+\\);"))) {
+                    possibleVar = true;
+                } else {
+                    possibleVar = false;
                 }
 
                 if (!(possibleVar)) {
@@ -788,55 +792,58 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
+                    } else if (std::regex_match(line, std::regex("(out\\([a-zA-Z0-9]+\\s*\\+\\s*[a-zA-Z0-9]+\\);)"))) {
+                        std::string var1;
+                        std::string var2;
+
+                        std::string cleanedVar1 = "";
+                        std::string cleanedVar2 = "";
+
+
+                        std::smatch m;
+
+                        std::regex_search(line, m, std::regex("[a-zA-Z0-9]+\\s+"));
+
+                        for (auto i: m) {
+                            var1 = i;
+                            break;
+                        }
+
+                        std::regex_search(line, m, std::regex("\\s[a-z]+"));
+
+                        for (auto i: m) {
+                            var2 = i;
+                            break;
+                        }
+
+                        for (int i = 0; i < var1.size(); ++i) {
+                            if (var1[i] != ' ') {
+                                cleanedVar1 += var1[i];
+                            }
+                        }
+
+                        for (int i = 0; i < var2.size(); ++i) {
+                            if (var2[i] != ' ') {
+                                cleanedVar2 += var2[i];
+                            }
+                        }
+
+                        if (!(stringVars.count(cleanedVar1)) || !(stringVars.count(cleanedVar2))) {
+                            exit_err("Trying to concatenate non-existing var(s) on line: " + std::to_string(internalLineNum));
+                        } else {
+                            std::cout << stringVars[cleanedVar1] << stringVars[cleanedVar2] << std::endl;
+                        }
                     } else {
                         std::cout << stdoutBuffer << std::endl;
+                        possibleVar = false;
                     }
                 } else {
                     rtToken ^ varKey;
                     if (!(intVars.count(varKey))) {
-                        if (!(stringVars.count(varKey)) && !(std::regex_match(line, std::regex("(out\\([a-zA-Z0-9]+\\s*\\+\\s*[a-zA-Z0-9]+\\);)")))) {
+                        if (!(stringVars.count(varKey))) {
+                            std::cout << line << std::endl;
+                            std::cout << varKey << std::endl;
                             exit_err("RUNTIME ERROR: Trying to output non-existing var on line: " + std::to_string(internalLineNum));
-                        } else if (std::regex_match(line, std::regex("(out\\([a-zA-Z0-9]+\\s*\\+\\s*[a-zA-Z0-9]+\\);)"))) {
-                            std::string var1;
-                            std::string var2;
-
-                            std::string cleanedVar1 = "";
-                            std::string cleanedVar2 = "";
-
-
-                            std::smatch m;
-
-                            std::regex_search(line, m, std::regex("[a-zA-Z0-9]+\\s+"));
-
-                            for (auto i: m) {
-                                var1 = i;
-                                break;
-                            }
-
-                            std::regex_search(line, m, std::regex("\\s[a-z]+"));
-
-                            for (auto i: m) {
-                                var2 = i;
-                                break;
-                            }
-
-                            for (int i = 0; i < var1.size(); ++i) {
-                                if (var1[i] != ' ') {
-                                    cleanedVar1 += var1[i];
-                                }
-                            }
-
-                            for (int i = 0; i < var2.size(); ++i) {
-                                if (var2[i] != ' ') {
-                                    cleanedVar2 += var2[i];
-                                }
-                            }
-
-                            if (!(stringVars.count(cleanedVar1)) || !(stringVars.count(cleanedVar2))) {
-                                exit_err("Trying to concatenate non-existing var(s) on line: " + std::to_string(internalLineNum));
-                            } else {
-                                std::cout << stringVars[cleanedVar1] << stringVars[cleanedVar2] << std::endl;
-                            }
                         } else {
                             std::cout << stringVars[varKey] << std::endl;
                         }
