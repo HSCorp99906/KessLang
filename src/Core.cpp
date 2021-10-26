@@ -385,6 +385,10 @@ void parseAndPrepare(std::string line, std::string ed) {
                     for (int i = 0; i < line.size() && line[i] == ' '; ++i) {
                         ++indentLevel;
                     }
+
+                    if (line[line.size() - 1] != ';') {
+                        exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
+                    }
                 } else {
                     if (line[0] == ' ') {
                         unsigned short int indentLevelMatch = 0;
@@ -395,6 +399,10 @@ void parseAndPrepare(std::string line, std::string ed) {
 
                         if (indentLevelMatch != indentLevel) {
                             exit_err("ERROR: Indent error on line: " + std::to_string(lineNum));
+                        }
+
+                        if (line[line.size() - 1] != ';') {
+                            exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
                         }
                     } else {
                         ifBlockBegin = false;
