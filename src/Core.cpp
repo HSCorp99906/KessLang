@@ -1,8 +1,12 @@
 #include "../include/Core.hpp"
 #include "../include/Token.hpp"
+#include "../include/BuiltIn/Function.hpp"
+
 
 /* CORE FILE TO HANDLE SYNTAX
  * STUFF AND EXECUTION*/
+
+ extern std::ifstream src;
 
 
 unsigned int lineNum = 0;
@@ -33,7 +37,8 @@ enum BuiltIn : unsigned int {
     IF_STATEMENT = 13,
     IN = 14,
     STOP = 15,
-    STRING_ADDON = 16
+    STRING_ADDON = 16,
+    FUNCTION_DEF = 17
 };
 
 
@@ -121,12 +126,14 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (std::regex_match(parse, std::regex("([a-zA-Z]+\\d*\\s*+\\+=\\s*\"{1}[^\"]+\";|[a-zA-Z]+\\d*\\s*+\\+=\\s*\[A-Za-z0-9];)"))) {
             builtInUsed = STRING_ADDON;
             break;
+        } else if (std::regex_match(parse, std::regex("func\\s+[A-Za-z]+[0-9A-Za-z]*\\(\\):"))) {
+            builtInUsed = FUNCTION_DEF;
+            break;
         }
     }
 }
 
 void exit_err(std::string message) {
-    extern std::ifstream src;
     outFile.close();
     std::cout << message << std::endl;
     src.close();
@@ -451,6 +458,10 @@ void parseAndPrepare(std::string line, std::string ed) {
                     }
                 }
             }
+
+            break;
+        case FUNCTION_DEF:
+            break;
         }
 
     }
