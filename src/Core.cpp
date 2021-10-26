@@ -377,8 +377,14 @@ void parseAndPrepare(std::string line, std::string ed) {
                     }
 
                     if (!(std::regex_match(parseCondition, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
-                        std::cout << parseCondition << std::endl;
-                        exit_err("ERROR: Syntax error with if statement on line: " + std::to_string(lineNum));
+                        parseCondition = "";
+                        for (int i = 3; i < lines[lineNum - 1].size() - 1; ++i) {
+                            parseCondition += lines[lineNum - 1][i];
+                        }
+
+                        if (!(std::regex_match(parseLine, std::regex("(\\d+\\s*>\\s*\\d+|\\d+\\s*<\\s*\\d+|\\d+\\s*==\\s*\\d+|\"{1}.\"{1}\\s*==\\s*\"{1}.\"{1}|\\d+\\s*!=\\s*\\d+|\"{1}.\"{1}\\s*!=\\s*\"{1}.\"{1}|\"{1}.*\"{1}\\s*==\\s*[a-zA-Z]+\\d*|[a-zA-Z]+\\d*\\s*==\\s*\"{1}.*\"{1})")))) {
+                            exit_err("ERROR: Syntax error with if statement on line: " + std::to_string(lineNum));
+                        }
                     }
                 } else if (ifBlockBegin) {
                     ifBlockBegin = false;
