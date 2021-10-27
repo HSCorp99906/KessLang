@@ -19,6 +19,14 @@ std::vector<std::string> cb_files;
 unsigned int c_blocks = 0;
 
 
+void exit_err(std::string message) {
+    outFile.close();
+    std::cout << message << std::endl;
+    src.close();
+    exit(1);
+}
+
+
 enum BuiltIn : unsigned int {
     OUT = 0,
     BACKWARD = 1,
@@ -77,78 +85,96 @@ void Token::operator^(std::string& output) {
 
 void Token::setBuiltIn(unsigned int& builtInUsed) {
     std::string parse = "";
+    bool tokenFound = false;
 
     for (int i = 0; i < this -> line.size(); ++i) {
         parse += this -> line[i];
         if (parse == "out") {
+            tokenFound = true;
             builtInUsed = OUT;
             break;
         } else if (parse == "bak") {
+            tokenFound = true;
             builtInUsed = BACKWARD;
             break;
         } else if (parse == "int") {
+            tokenFound = true;
             builtInUsed = INT_DEF;
             break;
         } else if (parse == "__EMPTY__") {
+            tokenFound = true;
             builtInUsed = EMPTY;
             break;
         } else if (parse == "++") {
+            tokenFound = true;
             builtInUsed = PRE_INC;
             break;
         } else if (regex_match(parse, std::regex("[a-zA-Z]\\d?+\\+\\+"))) {
+            tokenFound = true;
             builtInUsed = POST_INC;
             break;
         } else if (parse == "--") {
+            tokenFound = true;
             builtInUsed = PRE_DEC;
             break;
         } else if (std::regex_match(parse, std::regex("[A-Za-z]+(\\d?)+--"))) {
+            tokenFound = true;
             builtInUsed = POST_DEC;
             break;
         } else if (std::regex_match(parse, std::regex("__file_read_out__\\(\"[A-Za-z0-9]+\"\\);"))) {
+            tokenFound = true;
             builtInUsed = FILE_READ_OUT;
             break;
         } else if (parse == "str") {
+            tokenFound = true;
             builtInUsed = STRING_DEF;
             break;
         } else if (parse == "C_START:") {
+            tokenFound = true;
             builtInUsed = C_CODE;
             break;
         } else if (parse == "______END______") {
+            tokenFound = true;
             builtInUsed = END;
             break;
         } else if (parse == "\n") {
+            tokenFound = true;
             builtInUsed == NEWLINE;
             break;
         } else if (parse == "if") {
+            tokenFound = true;
             builtInUsed = IF_STATEMENT;
             break;
         } else if (parse == "stop") {
+            tokenFound = true;
             builtInUsed = STOP;
             break;
         } else if (std::regex_match(parse, std::regex("([a-zA-Z]+\\d*\\s*+\\+=\\s*\"{1}[^\"]+\";|[a-zA-Z]+\\d*\\s*+\\+=\\s*\[A-Za-z0-9];)"))) {
+            tokenFound = true;
             builtInUsed = STRING_ADDON;
             break;
         } else if (std::regex_match(parse, std::regex("func\\s{1}[A-Za-z]+[A-Z0-9a-z]*\\(\\)\\s*\\{"))) {
+            tokenFound = true;
             builtInUsed = FUNCTION_DEF;
             break;
         } else if (std::regex_match(parse, std::regex("[A-Za-z][A-Za-z0-9]*=>\\(\\)"))) {
+            tokenFound = true;
             builtInUsed = FUNCTION_CALL;
             break;
         } else if (parse == "______GAP______;") {
+            tokenFound = true;
             builtInUsed = GAP;
             break;
         } else if (parse == "__VAR_DUMP__") {
+            tokenFound = true;
             builtInUsed = VAR_DUMP;
             break;
         }
     }
-}
 
-void exit_err(std::string message) {
-    outFile.close();
-    std::cout << message << std::endl;
-    src.close();
-    exit(1);
+    if (!(tokenFound)) {
+        exit_err("ERROR: Unexpected token: \n" + this -> line);
+    }
 }
 
 
