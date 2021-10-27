@@ -153,7 +153,6 @@ void exit_err(std::string message) {
 
 
 void parseAndPrepare(std::string line, std::string ed) {
-
     std::string noCommentLine = "";
     bool endOfLine = false;
 
@@ -200,15 +199,17 @@ void parseAndPrepare(std::string line, std::string ed) {
     static bool c_def = false;
     static bool c_def_end = false;
 
+    typedef unsigned short int short_uint;
+
     static std::string current_c_block = "";
 
     static bool ifBlock = false;
     static bool ifBlockBegin = false;
-    static unsigned short int indentLevel = 0;
+    static short_uint indentLevel = 0;
 
     static bool functionActive = false;
     static bool functionBegin = false;
-    static unsigned short int fIndentLevel = 0;
+    static short_uint fIndentLevel = 0;
 
     if (c_def && !(c_def_end)) {
         builtInUsed = C_CODE;
@@ -487,6 +488,12 @@ void parseAndPrepare(std::string line, std::string ed) {
                         ++indentMatch;
                     }
 
+                    if (std::regex_match(line.substr(indentMatch, line.size() - 1), std::regex("int\\s+[a-zA-Z]+[a-zA-Z0-9]*\\s*=\\s*\\d+;"))) {
+                        exit_err("ERROR: Sorry, we currently do not support variables inside of functions.");
+                    } else if (std::regex_match(line.substr(indentMatch, line.size() - 1), std::regex("str\\s+[a-zA-Z]+[a-zA-Z0-9]*\\s*=\\s*\"{1}.*\"{1};"))) {
+                        exit_err("ERROR: Sorry, we currently do not support variables inside of functions.");
+                    }
+
                     if (line.substr(indentMatch, line.size() - 1) == "C_START:") {
                         exit_err("ERROR: Sorry, cannot have C Blocks in a function.");
                     }
@@ -579,8 +586,11 @@ void execute() {
 
     for (int i = 0; i < lines.size(); ++i) {
         unsigned int biu;  // Built in used.
-        rtToken << lines[i];
-        rtToken.setBuiltIn(biu);
+
+        if (!(funcExec)) {
+            rtToken << lines[i];
+            rtToken.setBuiltIn(biu);
+        }
 
         switch (biu) {
             // INT DEF is up here due to bugs.
