@@ -558,7 +558,6 @@ void execute() {
     std::map<std::string, short int> intVars;
     std::map<std::string, std::string> stringVars;
     std::map<std::string, std::vector<std::string>> functions;
-    std::vector<std::string>::iterator functionIterator;
 
     Token rtToken;
     unsigned int internalLineNum = 0;
