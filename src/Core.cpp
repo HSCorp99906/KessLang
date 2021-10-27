@@ -847,47 +847,30 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
-                    } else if (std::regex_match(line, std::regex("(out\\([a-zA-Z0-9]+\\s*\\+\\s*[a-zA-Z0-9]+\\);)"))) {
-                        std::string var1;
-                        std::string var2;
-
-                        std::string cleanedVar1 = "";
-                        std::string cleanedVar2 = "";
+                    } else if (std::regex_match(line, std::regex("out\\(([A-Za-z\\s]+\\+\\s*[A-Za-z]+)*\\);"))) {
+                        std::vector<std::string> toConcatenate;
+                        std::string concatenated = "";
 
 
                         std::smatch m;
 
-                        std::regex_search(line, m, std::regex("[a-zA-Z0-9]+\\s+"));
+                        std::string::const_iterator searchStart(line.cbegin());
 
-                        for (auto i: m) {
-                            var1 = i;
-                            break;
-                        }
-
-                        std::regex_search(line, m, std::regex("\\s[a-z]+"));
-
-                        for (auto i: m) {
-                            var2 = i;
-                            break;
-                        }
-
-                        for (int i = 0; i < var1.size(); ++i) {
-                            if (var1[i] != ' ') {
-                                cleanedVar1 += var1[i];
+                        while (regex_search(searchStart, line.cend(), m, std::regex("[^;out()+\\s]+"))) {
+                            for (auto i: m) {
+                                toConcatenate.push_back(i);
                             }
+
+                            searchStart = m.suffix().first;
+                        }
+ 
+                        for (int i = 0; i < toConcatenate.size(); ++i) {
+                            concatenated += stringVars[toConcatenate[i]];
                         }
 
-                        for (int i = 0; i < var2.size(); ++i) {
-                            if (var2[i] != ' ') {
-                                cleanedVar2 += var2[i];
-                            }
-                        }
+                        std::cout << concatenated << std::endl;
 
-                        if (!(stringVars.count(cleanedVar1)) || !(stringVars.count(cleanedVar2))) {
-                            exit_err("Trying to concatenate non-existing var(s) on line: " + std::to_string(internalLineNum));
-                        } else {
-                            std::cout << stringVars[cleanedVar1] << stringVars[cleanedVar2] << std::endl;
-                        }
+
                     } else {
                         std::cout << stdoutBuffer << std::endl;
                         possibleVar = false;
