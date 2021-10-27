@@ -478,7 +478,9 @@ void parseAndPrepare(std::string line, std::string ed) {
         case FUNCTION_DEF:
             if (!(functionBegin)) {
                 functionBegin = true;
-            } else {
+            }
+
+            if (functionBegin) {
                 if (!(functionActive)) {
                     functionActive = true;
 
@@ -517,7 +519,7 @@ void parseAndPrepare(std::string line, std::string ed) {
         functionEndCaught = true;
     }
 
-    if (line == "______END______;" && builtInUsed == FUNCTION_DEF && !(functionEndCaught)) {
+    if (line == "______END______;" && functionActive) {
         exit_err("ERROR: Expected \"}\" after function definition.");
     }
 
