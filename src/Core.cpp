@@ -636,6 +636,11 @@ void execute() {
         if (funcExec) {
             if (lastFuncLines < functions[lastFuncKey].size()) {
                 rtToken << functions[funcExecKey][lastFuncLines];
+
+                if (functions[funcExecKey][lastFuncLines][functions[funcExecKey][lastFuncLines].size() - 1] != ';') {
+                    exit_err("RUNTIME ERROR: Missing semicolen in function: " + lastFuncKey + "\n\nLINE: " + functions[funcExecKey][lastFuncLines]);
+                }
+
                 rtToken.setBuiltIn(builtInUsed);
                 ++lastFuncLines;
             } else {
