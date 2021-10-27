@@ -22,6 +22,7 @@ setup () {
     echo "highlight c_start ctermfg=magenta" >> ~/.vimrc
     echo "highlight c_end ctermfg=magenta" >> ~/.vimrc
     echo "highlight IF_STATEMENT ctermfg=yellow" >> ~/.vimrc
+    echo "highlight VARDUMP ctermfg=darkmagenta" >> ~/.vimrc
 }
 
 
