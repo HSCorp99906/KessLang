@@ -577,6 +577,7 @@ void execute() {
     std::string funcExecKey;
     std::string lastFuncKey = "";
     unsigned int lastFuncLines;
+    std::string curFuncLine;
 
     for (int i = 0; i < lines.size(); ++i) {
         unsigned int biu;  // Built in used.
@@ -710,10 +711,18 @@ void execute() {
                     }
                 }
 
-                if (std::regex_match(line, std::regex("out\\([a-zA-Z0-9]+\\);"))) {
-                    possibleVar = true;
+                if (!(funcExec)) {
+                    if (std::regex_match(line, std::regex("out\\([a-zA-Z0-9]+\\);"))) {
+                        possibleVar = true;
+                    } else {
+                        possibleVar = false;
+                    }
                 } else {
-                    possibleVar = false;
+                    if (std::regex_match(curFuncLine, std::regex("out\\([a-zA-Z0-9]+\\);"))) {
+                        possibleVar = true;
+                    } else {
+                        possibleVar = false;
+                    }
                 }
 
                 if (!(possibleVar)) {
@@ -1016,6 +1025,7 @@ void execute() {
 
                         if (_line != "}") {
                             functions[lastFuncKey].push_back(_line);
+                            curFuncLine = _line;
                         } else {
                             functionActive = false;
                         }
@@ -1074,61 +1084,123 @@ void execute() {
                     bool setVarDefault = true;
                     bool quotes = false;
 
-                    for (int i = 4; i < line.size() - 1; ++i) {
-                        if (line[i] != ' ') {
-                            varKey += line[i];
-                        } else {
-                            for (int j = i + 3; j < line.size() - 1; ++j) {
-                                if (line[j] == '"') {
-                                    quotes = true;
-                                }
 
-                                if (line[j] != '"') {
-                                    varVal += line[j];
+                    if (!(funcExec)) {
+                        for (int i = 4; i < line.size() - 1; ++i) {
+                            if (line[i] != ' ') {
+                                varKey += line[i];
+                            } else {
+                                for (int j = i + 3; j < line.size() - 1; ++j) {
+                                    if (line[j] == '"') {
+                                        quotes = true;
+                                    }
 
-                                    if (varVal == "in" && !(quotes)) {
-                                        setVarDefault = false;
+                                    if (line[j] != '"') {
+                                        varVal += line[j];
 
-                                        bool openParen = false;
-                                        bool closedParen = false;
-                                        unsigned short int quoteCount = 0;
+                                        if (varVal == "in" && !(quotes)) {
+                                            setVarDefault = false;
 
-                                        for (int e = j + 1; e < line.size() - 1; ++e) {
-                                            if (line[e] == '(') {
-                                                if (openParen) {
-                                                    exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                            bool openParen = false;
+                                            bool closedParen = false;
+                                            unsigned short int quoteCount = 0;
+
+                                            for (int e = j + 1; e < line.size() - 1; ++e) {
+                                                if (line[e] == '(') {
+                                                    if (openParen) {
+                                                        exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                                    }
+
+                                                    openParen = true;
+                                                } else if (line[e] == '"') {
+                                                    if (quoteCount > 2) {
+                                                        exit_err("RUNTIME ERROR: Too many quotes on line: " + std::to_string(internalLineNum));
+                                                    }
+
+                                                    ++quoteCount;
+                                                } else if (line[e] == ')') {
+                                                    if (closedParen) {
+                                                        exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                                    }
+
+                                                    closedParen = true;
+                                                } else {
+                                                    inputVarVal += line[e];
                                                 }
-
-                                                openParen = true;
-                                            } else if (line[e] == '"') {
-                                                if (quoteCount > 2) {
-                                                    exit_err("RUNTIME ERROR: Too many quotes on line: " + std::to_string(internalLineNum));
-                                                }
-
-                                                ++quoteCount;
-                                            } else if (line[e] == ')') {
-                                                if (closedParen) {
-                                                    exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
-                                                }
-
-                                                closedParen = true;
-                                            } else {
-                                                inputVarVal += line[e];
                                             }
-                                        }
 
-                                        if (quoteCount == 0) {
-                                            exit_err("RUNTIME ERROR: Variables as input title is not supported currently, error on line: " + std::to_string(internalLineNum));
-                                        } else if (openParen && !(closedParen) || !(openParen) && closedParen) {
-                                            exit_err("RUNTIME ERROR: Missing parenthesis on line " + std::to_string(internalLineNum));
+                                            if (quoteCount == 0) {
+                                                exit_err("RUNTIME ERROR: Variables as input title is not supported currently, error on line: " + std::to_string(internalLineNum));
+                                            } else if (openParen && !(closedParen) || !(openParen) && closedParen) {
+                                                exit_err("RUNTIME ERROR: Missing parenthesis on line " + std::to_string(internalLineNum));
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            break;
+                                break;
+                            }
                         }
+
+                    } else {
+                        for (int i = 4; i < curFuncLine.size() - 1; ++i) {
+                            if (curFuncLine[i] != ' ') {
+                                varKey += curFuncLine[i];
+                            } else {
+                                for (int j = i + 3; j < curFuncLine.size() - 1; ++j) {
+                                    if (curFuncLine[j] == '"') {
+                                        quotes = true;
+                                    }
+
+                                    if (curFuncLine[j] != '"') {
+                                        varVal += curFuncLine[j];
+
+                                        if (varVal == "in" && !(quotes)) {
+                                            setVarDefault = false;
+
+                                            bool openParen = false;
+                                            bool closedParen = false;
+                                            unsigned short int quoteCount = 0;
+
+                                            for (int e = j + 1; e < curFuncLine.size() - 1; ++e) {
+                                                if (curFuncLine[e] == '(') {
+                                                    if (openParen) {
+                                                        exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                                    }
+
+                                                    openParen = true;
+                                                } else if (curFuncLine[e] == '"') {
+                                                    if (quoteCount > 2) {
+                                                        exit_err("RUNTIME ERROR: Too many quotes on line: " + std::to_string(internalLineNum));
+                                                    }
+
+                                                    ++quoteCount;
+                                                } else if (curFuncLine[e] == ')') {
+                                                    if (closedParen) {
+                                                        exit_err("RUNTIME ERROR: Too many parenthesis on line: " + std::to_string(internalLineNum));
+                                                    }
+
+                                                    closedParen = true;
+                                                } else {
+                                                    inputVarVal += curFuncLine[e];
+                                                }
+                                            }
+
+                                            if (quoteCount == 0) {
+                                                exit_err("RUNTIME ERROR: Variables as input title is not supported currently, error on line: " + std::to_string(internalLineNum));
+                                            } else if (openParen && !(closedParen) || !(openParen) && closedParen) {
+                                                exit_err("RUNTIME ERROR: Missing parenthesis on line " + std::to_string(internalLineNum));
+                                            }
+                                        }
+                                    }
+                                }
+
+                                break;
+                            }
+                        }
+
                     }
+
 
                     if (setVarDefault) {
                         stringVars[varKey] = varVal;
