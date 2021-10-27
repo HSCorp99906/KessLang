@@ -30,7 +30,6 @@ int
 ######  Keywords
 
 ```
-__file_read_out__("filename.txt")
 out("Something to output.")
 bak("Backwards text.")
 // Comment
