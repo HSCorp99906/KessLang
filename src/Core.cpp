@@ -583,9 +583,11 @@ void execute() {
     std::string lastFuncKey = "";
     unsigned int lastFuncLines;
     std::string curFuncLine;
+    unsigned int _lineNum = 0;
 
     for (int i = 0; i < lines.size(); ++i) {
         unsigned int biu;  // Built in used.
+        ++_lineNum;
 
         if (!(funcExec)) {
             rtToken << lines[i];
@@ -616,7 +618,11 @@ void execute() {
                     std::stringstream toInt(varVal);
                     toInt >> varValInt;
 
-                    intVars[varKey] = varValInt;
+                    if (!(intVars.count(varKey) && !(stringVars.count(varKey)))) {
+                        intVars[varKey] = varValInt;
+                    } else {
+                        exit_err("RUNTIME ERROR: Var re-defined or var already exists as another type on line: " + std::to_string(internalLineNum));
+                    }
                 }
 
                 break;
@@ -1225,6 +1231,10 @@ void execute() {
 
                     }
 
+
+                    if (stringVars.count(varKey) || intVars.count(varKey)) {
+                        exit_err("RUNTIME ERROR: Var re-defined or var already exists as another type on line: " + std::to_string(internalLineNum));
+                    }
 
                     if (setVarDefault) {
                         stringVars[varKey] = varVal;
