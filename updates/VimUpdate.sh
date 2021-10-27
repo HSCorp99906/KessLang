@@ -49,6 +49,8 @@ echo "highlight c_start ctermfg=magenta" >> ~/.vimrc
 echo "highlight c_end ctermfg=magenta" >> ~/.vimrc
 echo "highlight IF_STATEMENT ctermfg=yellow" >> ~/.vimrc
 echo "highlight VARDUMP ctermfg=darkmagenta" >> ~/.vimrc
+echo "highlight FUNC ctermfg=yellow" >> ~/.vimrc
+echo "highlight STOP ctermfg=darkmagenta" >> ~/.vimrc
 
 vimfile=$(find ~/.vim | head -n 1)
 

@@ -10,3 +10,5 @@ syntax match c_start /C_START:/
 syntax match c_end /C_END\>/
 syntax match IF_STATEMENT /if/
 syntax match VARDUMP /__VAR_DUMP__\>/
+syntax match FUNC /func\>/
+syntax match STOP /stop\>/
