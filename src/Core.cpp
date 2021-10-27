@@ -37,7 +37,9 @@ enum BuiltIn : unsigned int {
     IN = 14,
     STOP = 15,
     STRING_ADDON = 16,
-    FUNCTION_DEF = 17
+    FUNCTION_DEF = 17,
+    FUNCTION_CALL = 18,
+    GAP = 19
 };
 
 
@@ -125,8 +127,14 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (std::regex_match(parse, std::regex("([a-zA-Z]+\\d*\\s*+\\+=\\s*\"{1}[^\"]+\";|[a-zA-Z]+\\d*\\s*+\\+=\\s*\[A-Za-z0-9];)"))) {
             builtInUsed = STRING_ADDON;
             break;
-        } else if (std::regex_match(parse, std::regex("func\\s+[A-Za-z]+[A-Z0-9a-z]*\\(\\)\\s*\\{"))) {
+        } else if (std::regex_match(parse, std::regex("func\\s{1}[A-Za-z]+[A-Z0-9a-z]*\\(\\)\\s*\\{"))) {
             builtInUsed = FUNCTION_DEF;
+            break;
+        } else if (std::regex_match(parse, std::regex("[A-Za-z][A-Za-z0-9]*=>\\(\\)"))) {
+            builtInUsed = FUNCTION_CALL;
+            break;
+        } else if (parse == "______GAP______;") {
+            builtInUsed = GAP;
             break;
         }
     }
@@ -515,7 +523,7 @@ void parseAndPrepare(std::string line, std::string ed) {
 
     functionEndCaught = false;
 
-    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock) && builtInUsed != FUNCTION_DEF) {
+    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock) && builtInUsed != FUNCTION_DEF && line != "}") {
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
 
@@ -548,6 +556,7 @@ void execute() {
     std::map<std::string, short int> intVars;
     std::map<std::string, std::string> stringVars;
     std::map<std::string, std::vector<std::string>> functions;
+    std::vector<std::string>::iterator functionIterator;
 
     Token rtToken;
     unsigned int internalLineNum = 0;
@@ -561,6 +570,13 @@ void execute() {
     std::string ifLine;
     bool isTrue = false;
     unsigned int ifLineNum = 0;
+
+    bool functionActive = false;
+    bool funcExec = false;
+    bool execEnd = false;
+    std::string funcExecKey;
+    std::string lastFuncKey = "";
+    unsigned int lastFuncLines;
 
     for (int i = 0; i < lines.size(); ++i) {
         unsigned int biu;  // Built in used.
@@ -611,10 +627,24 @@ void execute() {
         std::stringstream toInt;
         int varVal;
 
+        if (funcExec) {
+            if (lastFuncLines < functions[lastFuncKey].size()) {
+                rtToken << functions[lastFuncKey][lastFuncLines];
+                rtToken.setBuiltIn(builtInUsed);
+                ++lastFuncLines;
+            } else {
+                funcExec = false;
+                execEnd = true;
+            }
+        }
+
         std::string line = lines[_line];
 
-        rtToken << line;
-        rtToken.setBuiltIn(builtInUsed);
+
+        if (!(funcExec)) {
+            rtToken << line;
+            rtToken.setBuiltIn(builtInUsed);
+        }
 
         std::string stdoutBuffer;
         std::string stdoutBakBuffer = "";
@@ -941,6 +971,81 @@ void execute() {
                     exit_err("RUNTIME ERROR: Either decrementing non-existing var or var is not int. Issue on line: " + std::to_string(internalLineNum));
                 }
 
+                break;
+            case FUNCTION_DEF:
+                {
+
+                    if (!(functionActive)) {
+                        functionActive = true;
+                        std::string functionKey = "";
+
+
+                        std::smatch m;
+
+                        std::regex_search(line, m, std::regex("\\s[a-zA-Z][A-Za-z0-9]*"));
+
+                        for (auto i: m) {
+                            functionKey = i;
+                            break;
+                        }
+
+                        for (int i = 0; i < functionKey.size(); ++i) {
+                            if (functionKey[i] != ' ') {
+                                lastFuncKey += functionKey[i];
+                            }
+                        }
+
+                        if (functions.count(lastFuncKey)) {
+                            exit_err("RUNTIME ERROR: \"" + lastFuncKey + "\" defined again on line: " + std::to_string(internalLineNum));
+                        }
+
+                        functionActive = true;
+                        functions[lastFuncKey] = {};
+                    } else {
+                        std::string _line = "";
+
+                        bool restrictSpaces = true;
+
+                        for (int i = 0; i < line.size(); ++i) {
+                            if (line[i] != ' ') {
+                                restrictSpaces = false;
+                            }
+
+                            if (!(restrictSpaces)) {
+                                _line += line[i];
+                            }
+                        }
+
+                        if (_line != "}") {
+                            functions[lastFuncKey].push_back(_line);
+                        } else {
+                            functionActive = false;
+                        }
+                    }
+                }
+                break;
+            case FUNCTION_CALL:
+                {
+                    std::smatch m;
+
+                    std::string functionKey = "";
+
+                    std::regex_search(line, m, std::regex("^[a-zA-Z][A-Za-z0-9]*"));
+
+                    for (auto i: m) {
+                        funcExecKey = i;
+                        break;
+                    }
+
+                    if (!(functions.count(funcExecKey))) {
+                        exit_err("RUNTIME ERROR LINE " + std::to_string(internalLineNum) + ": Function \"" + funcExecKey + "\" does not exist.");
+                    } else {
+                        lines.insert(lines.begin() + internalLineNum, "______GAP______;");  // Fixes bug that ignores lines after function call.
+                        lastFuncLines = 0;
+                        funcExec = true;
+                    }
+
+                }
                 break;
             case FILE_READ_OUT:
                 {
