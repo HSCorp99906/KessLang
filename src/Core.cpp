@@ -39,7 +39,8 @@ enum BuiltIn : unsigned int {
     STRING_ADDON = 16,
     FUNCTION_DEF = 17,
     FUNCTION_CALL = 18,
-    GAP = 19
+    GAP = 19,
+    VAR_DUMP = 20
 };
 
 
@@ -135,6 +136,9 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             break;
         } else if (parse == "______GAP______;") {
             builtInUsed = GAP;
+            break;
+        } else if (parse == "__VAR_DUMP__") {
+            builtInUsed = VAR_DUMP;
             break;
         }
     }
@@ -863,7 +867,7 @@ void execute() {
 
                             searchStart = m.suffix().first;
                         }
- 
+
                         for (int i = 0; i < toConcatenate.size(); ++i) {
                             concatenated += stringVars[toConcatenate[i]];
                         }
@@ -928,6 +932,35 @@ void execute() {
                     }
                 } else {
                     exit_err("RUNTIME ERROR: Either incrementing non-existing var or var is not int. Issue on line: " + std::to_string(internalLineNum));
+                }
+
+                break;
+            case VAR_DUMP:
+                {
+                    std::string vars = "";
+
+                    typedef std::map<std::string, short int> intVar;
+                    typedef std::map<std::string, std::string> stringVar;
+
+                    for (intVar::const_iterator it = intVars.begin(); it != intVars.end(); ++it) {
+                        std::string kv = "INT_VARS[";
+                        kv += it -> first;
+                        kv += "] = ";
+                        kv += std::to_string(it -> second);
+                        vars += kv;
+                        vars += "\n\n";
+                    }
+
+                    for (stringVar::const_iterator it = stringVars.begin(); it != stringVars.end(); ++it) {
+                        std::string kv = "STRING_VARS[";
+                        kv += it -> first;
+                        kv += "] = ";
+                        kv += it -> second;
+                        vars += kv;
+                        vars += "\n\n";
+                    }
+
+                    std::cout << vars << std::endl;
                 }
 
                 break;
