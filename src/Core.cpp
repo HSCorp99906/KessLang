@@ -635,7 +635,7 @@ void execute() {
 
         if (funcExec) {
             if (lastFuncLines < functions[lastFuncKey].size()) {
-                rtToken << functions[lastFuncKey][lastFuncLines];
+                rtToken << functions[funcExecKey][lastFuncLines];
                 rtToken.setBuiltIn(builtInUsed);
                 ++lastFuncLines;
             } else {
@@ -1002,6 +1002,7 @@ void execute() {
                     if (!(functionActive)) {
                         functionActive = true;
                         std::string functionKey = "";
+                        lastFuncKey = "";
 
 
                         std::smatch m;
@@ -1052,8 +1053,6 @@ void execute() {
             case FUNCTION_CALL:
                 {
                     std::smatch m;
-
-                    std::string functionKey = "";
 
                     std::regex_search(line, m, std::regex("^[a-zA-Z][A-Za-z0-9]*"));
 
