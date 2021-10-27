@@ -1,6 +1,5 @@
 #include "../include/Core.hpp"
 #include "../include/Token.hpp"
-#include "../include/BuiltIn/Function.hpp"
 
 
 /* CORE FILE TO HANDLE SYNTAX
@@ -126,7 +125,7 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (std::regex_match(parse, std::regex("([a-zA-Z]+\\d*\\s*+\\+=\\s*\"{1}[^\"]+\";|[a-zA-Z]+\\d*\\s*+\\+=\\s*\[A-Za-z0-9];)"))) {
             builtInUsed = STRING_ADDON;
             break;
-        } else if (std::regex_match(parse, std::regex("func\\s+[A-Za-z]+[0-9A-Za-z]*\\(\\):"))) {
+        } else if (std::regex_match(parse, std::regex("func\\s+[A-Za-z]+[A-Z0-9a-z]*\\(\\)\\s*\\{"))) {
             builtInUsed = FUNCTION_DEF;
             break;
         }
@@ -194,12 +193,20 @@ void parseAndPrepare(std::string line, std::string ed) {
     static bool ifBlockBegin = false;
     static unsigned short int indentLevel = 0;
 
+    static bool functionActive = false;
+    static bool functionBegin = false;
+    static unsigned short int fIndentLevel = 0;
+
     if (c_def && !(c_def_end)) {
         builtInUsed = C_CODE;
     } else if (c_def_end) {
         c_def = false;
         builtInUsed = NEWLINE;
         line = "\n;";
+    }
+
+    if (functionActive) {
+        builtInUsed = FUNCTION_DEF;
     }
 
     switch (builtInUsed) {
@@ -461,6 +468,28 @@ void parseAndPrepare(std::string line, std::string ed) {
 
             break;
         case FUNCTION_DEF:
+            if (!(functionBegin)) {
+                functionBegin = true;
+            } else {
+                if (!(functionActive)) {
+                    functionActive = true;
+
+                    for (int i = 0; line[i] == ' ' && i < line.size(); ++i) {
+                        ++fIndentLevel;
+                    }
+                } else {
+                    unsigned short int indentMatch = 0;
+
+                    for (int i = 0; line[i] == ' ' && i < line.size(); ++i) {
+                        ++indentMatch;
+                    }
+
+                    if (indentMatch < fIndentLevel && indentMatch != 0) {
+                        exit_err("ERROR: Indent error on line: " + std::to_string(lineNum));
+                    }
+                }
+            }
+
             break;
         }
 
@@ -472,7 +501,21 @@ void parseAndPrepare(std::string line, std::string ed) {
         exit_err("ERROR: Lingering quotes on line: " + std::to_string(lineNum));
     }
 
-    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock)) {
+    bool functionEndCaught = false;
+
+    if (builtInUsed == FUNCTION_DEF && line[0] == '}') {
+        functionBegin = false;
+        functionActive = false;
+        functionEndCaught = true;
+    }
+
+    if (line == "______END______;" && builtInUsed == FUNCTION_DEF && !(functionEndCaught)) {
+        exit_err("ERROR: Expected \"}\" after function definition.");
+    }
+
+    functionEndCaught = false;
+
+    if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock) && builtInUsed != FUNCTION_DEF) {
         exit_err("ERROR: Missing semicolen on line: " + std::to_string(lineNum));
     }
 
@@ -504,6 +547,7 @@ void parseAndPrepare(std::string line, std::string ed) {
 void execute() {
     std::map<std::string, short int> intVars;
     std::map<std::string, std::string> stringVars;
+    std::map<std::string, std::vector<std::string>> functions;
 
     Token rtToken;
     unsigned int internalLineNum = 0;
