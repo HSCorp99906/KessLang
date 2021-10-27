@@ -104,7 +104,7 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (std::regex_match(parse, std::regex("[A-Za-z]+(\\d?)+--"))) {
             builtInUsed = POST_DEC;
             break;
-        } else if (parse == "__file_read_out__") {
+        } else if (std::regex_match(parse, std::regex("__file_read_out__\\(\"[A-Za-z0-9]+\"\\);"))) {
             builtInUsed = FILE_READ_OUT;
             break;
         } else if (parse == "str") {
@@ -199,6 +199,7 @@ void parseAndPrepare(std::string line, std::string ed) {
 
     static bool c_def = false;
     static bool c_def_end = false;
+
     static std::string current_c_block = "";
 
     static bool ifBlock = false;
@@ -358,18 +359,6 @@ void parseAndPrepare(std::string line, std::string ed) {
                         exit_err("ERROR: Too many quotes on line: " + std::to_string(lineNum));
                     }
 
-                    if (line[i] == '(' && !(openParen)) {
-                        openParen = true;
-                    } else if (line[i] == ')' && !(closedParen)) {
-                        closedParen = true;
-                    } else if (line[i] == '(' && openParen || line[i] == ')' && closedParen) {
-                        exit_err("ERROR: Too many parenthesis on line: " + std::to_string(lineNum));
-                    }
-
-                    if (!(openParen) || !(closedParen)) {
-                        exit_err("ERROR: Missing parenthesis on line: " + std::to_string(lineNum));
-                    }
-
                     {
 
                     std::string filename = "";
@@ -496,6 +485,10 @@ void parseAndPrepare(std::string line, std::string ed) {
 
                     for (int i = 0; line[i] == ' ' && i < line.size(); ++i) {
                         ++indentMatch;
+                    }
+
+                    if (line.substr(indentMatch, line.size() - 1) == "C_START:") {
+                        exit_err("ERROR: Sorry, cannot have C Blocks in a function.");
                     }
 
                     if (indentMatch < fIndentLevel && indentMatch != 0) {
