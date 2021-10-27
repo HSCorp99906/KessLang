@@ -48,7 +48,8 @@ enum BuiltIn : unsigned int {
     FUNCTION_DEF = 17,
     FUNCTION_CALL = 18,
     GAP = 19,
-    VAR_DUMP = 20
+    VAR_DUMP = 20,
+    COMMENT = 21
 };
 
 
@@ -168,6 +169,10 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (parse == "__VAR_DUMP__") {
             tokenFound = true;
             builtInUsed = VAR_DUMP;
+            break;
+        } else if (parse == "//") {
+            tokenFound = true;
+            builtInUsed = COMMENT;
             break;
         }
     }
