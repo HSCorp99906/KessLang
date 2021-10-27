@@ -886,8 +886,6 @@ void execute() {
                     rtToken ^ varKey;
                     if (!(intVars.count(varKey))) {
                         if (!(stringVars.count(varKey))) {
-                            std::cout << line << std::endl;
-                            std::cout << varKey << std::endl;
                             exit_err("RUNTIME ERROR: Trying to output non-existing var on line: " + std::to_string(internalLineNum));
                         } else {
                             std::cout << stringVars[varKey] << std::endl;
@@ -1032,6 +1030,8 @@ void execute() {
 
                     std::regex_search(line, m, std::regex("^[a-zA-Z][A-Za-z0-9]*"));
 
+                    // lines.insert(lines.begin() + internalLineNum, "______GAP______;");  // Fixes bug that ignores lines after function call.
+
                     for (auto i: m) {
                         funcExecKey = i;
                         break;
@@ -1040,7 +1040,6 @@ void execute() {
                     if (!(functions.count(funcExecKey))) {
                         exit_err("RUNTIME ERROR LINE " + std::to_string(internalLineNum) + ": Function \"" + funcExecKey + "\" does not exist.");
                     } else {
-                        lines.insert(lines.begin() + internalLineNum, "______GAP______;");  // Fixes bug that ignores lines after function call.
                         lastFuncLines = 0;
                         funcExec = true;
                     }

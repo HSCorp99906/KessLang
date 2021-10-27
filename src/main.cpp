@@ -1,5 +1,6 @@
 #include <fstream>
 #include <string>
+#include <regex>
 #include "../include/Core.hpp"
 
 // Made By Ian Moffett 10/19/21
@@ -47,6 +48,10 @@ int main(int argc, char* argv[]) {
         }
 
         parseAndPrepare(line, argv[2]);
+
+        if (std::regex_match(line, std::regex("[A-Za-z][A-Za-z0-9]*=>\\(\\);"))) {
+            parseAndPrepare(line, argv[2]);
+        }
     }
 
     for (int i = 0; i < 3; ++i) {
