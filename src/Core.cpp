@@ -179,11 +179,11 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
             tokenFound = true;
             builtInUsed = RE_ASSIGN;
             break;
+        } else if (std::regex_match(parse, std::regex("if\\s+\\(.+\\)\\s*\\{"))) {
+            tokenFound = true;
+            builtInUsed = IF_STATEMENT;
+            break;
         }
-    }
-
-    if (!(tokenFound)) {
-        exit_err("ERROR: Unexpected token: \n" + this -> line);
     }
 }
 
@@ -215,9 +215,6 @@ void parseAndPrepare(std::string line, std::string ed) {
     unsigned int builtInUsed;
     Token ptToken;
 
-    ptToken << line;
-    ptToken.setBuiltIn(builtInUsed);
-
     bool openParen = false;
     bool closedParen = false;
     bool openQuote = false;
@@ -247,6 +244,9 @@ void parseAndPrepare(std::string line, std::string ed) {
     static bool functionBegin = false;
     static short_uint fIndentLevel = 0;
 
+    ptToken << line;
+    ptToken.setBuiltIn(builtInUsed);
+
     if (c_def && !(c_def_end)) {
         builtInUsed = C_CODE;
     } else if (c_def_end) {
@@ -257,6 +257,10 @@ void parseAndPrepare(std::string line, std::string ed) {
 
     if (functionActive) {
         builtInUsed = FUNCTION_DEF;
+    }
+
+    if (ifBlock || ifBlockBegin) {
+        builtInUsed = IF_STATEMENT;
     }
 
     switch (builtInUsed) {
@@ -308,6 +312,37 @@ void parseAndPrepare(std::string line, std::string ed) {
                     closedParen = true;
                 } else if (line[i] == '(' && openParen || line[i] == ')' && closedParen) {
                 exit_err("ERROR: Too many parenthesis on line: " + std::to_string(lineNum));
+                }
+            }
+
+            break;
+        case IF_STATEMENT:
+            if (!(ifBlockBegin) && !(ifBlock)) {
+                ifBlockBegin = true;
+                break;
+            } else if (ifBlockBegin) {
+                ifBlockBegin = false;
+                ifBlock = true;
+
+
+                for (int i = 0; line[i] == ' ' && i < line.size(); ++i) {
+                    ++indentLevel;
+                }
+            } else {
+                short_uint indentMatch = 0;
+
+                for (int i = 0; i < line.size() && line[i] == ' '; ++i) {
+                    ++indentMatch;
+                }
+
+                if (line[0] == '}') {
+                    indentLevel = 0;
+                    ifBlock = false;
+                    break;
+                }
+
+                if (indentMatch < indentLevel && indentMatch > 0 && line[0] != '}') {
+                    exit_err("ERROR: Indent error on line: " + std::to_string(lineNum));
                 }
             }
 
@@ -563,6 +598,10 @@ void parseAndPrepare(std::string line, std::string ed) {
         exit_err("ERROR: Expected \"}\" after function definition.");
     }
 
+    if (line == "______END______;" && ifBlock) {
+        exit_err("ERROR: Expected \"}\" after if statement.");
+    }
+
     functionEndCaught = false;
 
     if (line[line.size() - 1] != ';' && !(c_def) && builtInUsed != IF_STATEMENT && !(ifBlock) && builtInUsed != FUNCTION_DEF && line != "}") {
@@ -598,6 +637,10 @@ void execute() {
     std::map<std::string, short int> intVars;
     std::map<std::string, std::string> stringVars;
     std::map<std::string, std::vector<std::string>> functions;
+    std::vector<std::string> ifExecBuffer;
+
+    typedef std::vector<std::string> stringVector;
+    stringVector::const_iterator ifExecBufferIt;
 
     Token rtToken;
     unsigned int internalLineNum = 0;
@@ -609,7 +652,7 @@ void execute() {
     bool ifBlock = false;
     bool pauseIfRead = false;
     std::string ifLine;
-    bool isTrue = false;
+    bool ifIsTrue = false;
     unsigned int ifLineNum = 0;
 
     bool functionActive = false;
@@ -726,10 +769,14 @@ void execute() {
             builtInUsed = IF_STATEMENT;
         }
 
-        if (pauseIfRead) {
-            pauseIfRead = false;
-            rtToken << ifLine;
-            rtToken.setBuiltIn(builtInUsed);
+        if (pauseIfRead && ifIsTrue) {
+            if (ifExecBufferIt != ifExecBuffer.end()) {
+                rtToken << *ifExecBufferIt;
+                rtToken.setBuiltIn(builtInUsed);
+                ++ifExecBufferIt;
+            } else {
+                ifExecBuffer.clear();
+            }
         }
 
         switch (builtInUsed) {
@@ -994,6 +1041,86 @@ void execute() {
                     }
                 } else {
                     exit_err("RUNTIME ERROR: Either incrementing non-existing var or var is not int. Issue on line: " + std::to_string(internalLineNum));
+                }
+
+                break;
+            case IF_STATEMENT:
+                {
+                    if (!(ifBlock)) {
+                        /*
+                        * This section prepares
+                        * the if statement.
+                        */
+
+                        ifExecBuffer.clear();
+                        ifBlock = true;
+
+                        std::string condition = "";
+
+                        for (int i = 4; i < line.size() - 1 && line[i] != ')'; ++i) {
+                            condition += line[i];
+                        }
+
+                        if (std::regex_match(condition, std::regex("[a-zA-Z]+[0-9A-ZA-Z]*\\s*==\\s*\".*\""))) {
+                            unsigned short int quotes = 0;
+
+                            for (int i = 0; i < condition.size(); ++i) {
+                                if (condition[i] == '"') {
+                                    ++quotes;
+                                }
+                            }
+
+                            if (quotes > 2) {
+                                exit_err("RUNTIME ERROR: Too many quotes on line: " + std::to_string(internalLineNum));
+                            }
+
+                            std::string varKey = "";
+
+                            for (int i = 0; i < condition.size() && condition[i] != ' ' && condition[i] != '='; ++i) {
+                                varKey +=  condition[i];
+                            }
+
+
+                            // WHEN MORE TYPES ADD ON HERE.
+                            if (intVars.count(varKey)) {
+                                exit_err("RUNTIME ERROR LINE " + std::to_string(internalLineNum) + ": Cannot compare an integer with a string.");
+                            }
+
+                            if (!(stringVars.count(varKey))) {
+                                exit_err("RUNTIME ERROR: Trying to compare non-existing string var on line: " + std::to_string(internalLineNum));
+                            } else {
+                                std::smatch m;
+
+                                std::regex_search(condition, m, std::regex("\".*\""));
+
+                                std::string __i;
+
+                                for (auto i: m) {
+                                    __i = i;
+                                    break;
+                                }
+
+                                __i = std::regex_replace(__i, std::regex("\""), "");
+
+                                ifIsTrue = stringVars[varKey] == __i;
+                            }
+                        }
+
+                    } else {
+                        unsigned short int indentLevel = 0;
+
+                        for (int i = 0; i < line.size() && line[i] == ' '; ++i) {
+                            ++indentLevel;
+                        }
+
+                        if (line[0] != '}') {
+                            ifExecBuffer.push_back(line.substr(indentLevel, line.size() - 1));
+                        } else {
+                            ifBlock = false;
+                            ifExecBufferIt = ifExecBuffer.begin();
+                            pauseIfRead = true;
+                        }
+                    }
                 }
 
                 break;
