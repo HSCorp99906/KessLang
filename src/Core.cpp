@@ -652,7 +652,7 @@ void execute() {
                     if (!(intVars.count(varKey) && !(stringVars.count(varKey)))) {
                         intVars[varKey] = varValInt;
                     } else {
-                        exit_err("RUNTIME ERROR: Var re-defined or var already exists as another type on line: " + std::to_string(internalLineNum));
+                        exit_err("RUNTIME ERROR: Var re-declared or var already exists as another type on line: " + std::to_string(_lineNum));
                     }
                 }
 
@@ -896,25 +896,37 @@ void execute() {
                         } else {
                             std::cout << "false" << std::endl;
                         }
-                    } else if (std::regex_match(line, std::regex("out\\(([A-Za-z\\s]+\\+\\s*[A-Za-z]+)*\\);"))) {
-                        std::vector<std::string> toConcatenate;
+                    } else if (std::regex_match(line, std::regex("out\\(\"?.*\"?\\s*\\+\\s*\"?.*.\"?\\);"))) {
                         std::string concatenated = "";
-
 
                         std::smatch m;
 
                         std::string::const_iterator searchStart(line.cbegin());
 
-                        while (regex_search(searchStart, line.cend(), m, std::regex("[^;out()+\\s]+"))) {
+                        while (regex_search(searchStart, line.cend(), m, std::regex("[^;out()+\s]+"))) {
                             for (auto i: m) {
-                                toConcatenate.push_back(i);
+                                std::string __i = i;
+                                if (std::regex_match(__i, std::regex("\".*\""))) {
+                                    std::smatch __m;
+                                    std::regex_search(__i, __m, std::regex("[^\"]+"));
+
+                                    for (auto i: __m) {
+                                        __i = i;
+                                    }
+
+                                    concatenated += __i;
+                                } else {
+                                    if (!(stringVars.count(__i))) {
+                                        std::string error = "RUNTIME ERROR: String var: ";
+                                        error = error + "\"" + __i + "\" not found on line: " + std::to_string(internalLineNum);
+                                        exit_err(error);
+                                    } else {
+                                        concatenated += stringVars[__i];
+                                    }
+                                }
                             }
 
                             searchStart = m.suffix().first;
-                        }
-
-                        for (int i = 0; i < toConcatenate.size(); ++i) {
-                            concatenated += stringVars[toConcatenate[i]];
                         }
 
                         std::cout << concatenated << std::endl;
@@ -1264,7 +1276,7 @@ void execute() {
 
 
                     if (stringVars.count(varKey) || intVars.count(varKey)) {
-                        exit_err("RUNTIME ERROR: Var re-defined or var already exists as another type on line: " + std::to_string(internalLineNum));
+                        exit_err("RUNTIME ERROR: Var re-declared or var already exists as another type on line: " + std::to_string(internalLineNum));
                     }
 
                     if (setVarDefault) {
