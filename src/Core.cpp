@@ -1104,6 +1104,8 @@ void execute() {
 
                                 ifIsTrue = stringVars[varKey] == __i;
                             }
+                        } else if (std::regex_match(condition, std::regex("\"*.+\"\\s*==\\s*\\w+\\d*"))) {
+                            exit_err("RUNTIME ERROR LINE " + std::to_string(internalLineNum) + " Sorry but first of all comparing like that is weird, second of all that doesn't work yet.");
                         }
 
                     } else {
