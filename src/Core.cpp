@@ -49,7 +49,8 @@ enum BuiltIn : unsigned int {
     FUNCTION_CALL = 18,
     GAP = 19,
     VAR_DUMP = 20,
-    COMMENT = 21
+    COMMENT = 21,
+    RE_ASSIGN = 22
 };
 
 
@@ -173,6 +174,10 @@ void Token::setBuiltIn(unsigned int& builtInUsed) {
         } else if (parse == "//") {
             tokenFound = true;
             builtInUsed = COMMENT;
+            break;
+        } else if (std::regex_match(parse, std::regex("\\w+(\\d\\w)*\\s*=\\s*(\\d+|\".*\")"))) {
+            tokenFound = true;
+            builtInUsed = RE_ASSIGN;
             break;
         }
     }
@@ -903,7 +908,7 @@ void execute() {
 
                         std::string::const_iterator searchStart(line.cbegin());
 
-                        while (regex_search(searchStart, line.cend(), m, std::regex("[^;out()+\s]+"))) {
+                        while (regex_search(searchStart, line.cend(), m, std::regex("[^;out()+\\s]+"))) {
                             for (auto i: m) {
                                 std::string __i = i;
                                 if (std::regex_match(__i, std::regex("\".*\""))) {
@@ -1128,6 +1133,66 @@ void execute() {
                     }
 
                 }
+                break;
+            case RE_ASSIGN:
+                {
+                    std::string varKey = "";
+
+                    for (int i = 0; line[i] != '=' && line[i] != ' ' && i < line.size(); ++i) {
+                        varKey += line[i];
+                    }
+
+                    if (!(stringVars.count(varKey)) && !(intVars.count(varKey))) {
+                        exit_err("RUNTIME ERROR: Trying to re-assign non-existing var on line: " + std::to_string(internalLineNum));
+                    } else if (intVars.count(varKey)) {
+                        std::smatch m;
+                        std::string lineCopy = std::regex_replace(line, std::regex(";"), "");
+                        std::regex_search(lineCopy, m, std::regex("\\d+$"));
+
+                        std::string __i;
+                        short int newVal;
+
+                        for (auto i: m) {
+                            __i = i;
+                            break;
+                        }
+
+                        if (!(std::regex_match(__i, std::regex("\\d+")))) {
+                            exit_err("RUNTIME ERROR: Re-assigning with invalid type on line: " + std::to_string(internalLineNum));
+                        }
+
+                        std::stringstream ss(__i);
+                        ss >> newVal;
+                        intVars[varKey] = newVal;
+                    } else if (stringVars.count(varKey)) {
+                        unsigned short int quotes = 0;
+
+                        for (int i = 0; i < line.size(); ++i) {
+                            if (line[i] == '"') {
+                                ++quotes;
+                            }
+                        }
+
+                        if (quotes > 2) {
+                            exit_err("RUNTIME ERROR: Syntax error on line: " + std::to_string(internalLineNum));
+                        } else if (quotes < 2 && quotes != 0) {
+                            exit_err("RUNTIME ERROR: Missing quotes on line: " + std::to_string(internalLineNum));
+                        } else if (quotes == 0) {
+                            exit_err("RUNTIME ERROR: Re-assigning with invalid type on line: " + std::to_string(internalLineNum));
+                        }
+
+                        std::smatch m;
+                        std::regex_search(line, m, std::regex("\".*\""));
+
+                        for (auto i: m) {
+                            stringVars[varKey] = i;
+                            break;
+                        }
+
+                        stringVars[varKey] = std::regex_replace(stringVars[varKey], std::regex("\""), "");
+                    }
+                }
+
                 break;
             case FILE_READ_OUT:
                 {
