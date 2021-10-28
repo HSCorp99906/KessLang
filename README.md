@@ -79,30 +79,12 @@ C_END
 
 ## CONDITIONS
 
-###### Output Conditions
-***Currently conditional opeartors do not work on variables and needs some work.***
-
-```
-out(1 == 1);
-out(1 != 2);
-out(5 > 2);
-out(2 < 5);
-```
-
 ###### If Statements
 
 ```
-if 1 == 1:
-    out("1 is equal to 1.");
-
-if 1 < 4:
-    out("1 is less than 4.");
-
-if 4 > 1:
-    out("4 is greater than 1.")
-
-if 1 != 2:
-    out("1 does not equal 2.")
+if (name == "Ian") {
+    out("Hello, Ian!");
+}
 ```
 
 
